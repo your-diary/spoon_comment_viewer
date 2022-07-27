@@ -1,0 +1,6 @@
+{
+    "twitter_id": "example",
+    "twitter_password": "ejeew#!jfe35AB",
+    "webdriver_port": 4444,
+    "implicit_timeout_ms": 5000
+}
