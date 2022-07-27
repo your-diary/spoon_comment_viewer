@@ -51,12 +51,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         };
 
-        for e in l {
-            if (comment_set.contains(&e.element_id)) {
-                continue;
+        let num_new_comment = {
+            let mut c = 0;
+            for e in l.iter().rev() {
+                if (comment_set.contains(&e.element_id)) {
+                    break;
+                }
+                comment_set.insert(e.element_id.clone());
+                c += 1;
             }
-            comment_set.insert(e.element_id.clone());
+            c
+        };
 
+        for e in l.iter().skip(l.len() - num_new_comment) {
             let inner_text = match e.text() {
                 Ok(s) => s,
                 Err(_) => continue,

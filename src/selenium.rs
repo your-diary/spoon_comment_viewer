@@ -1,3 +1,4 @@
+use std::process;
 use std::time::Duration;
 
 use thirtyfour_sync::{error::WebDriverError, prelude::*};
@@ -18,11 +19,16 @@ impl Selenium {
             )
             .unwrap();
 
-        let driver = WebDriver::new(
+        let driver = match WebDriver::new(
             format!("http://localhost:{}", webdriver_port).as_str(),
             &firefox,
-        )
-        .unwrap();
+        ) {
+            Ok(o) => o,
+            Err(_) => {
+                println!("Is `geckodriver` running?");
+                process::exit(1);
+            }
+        };
         driver.set_implicit_wait_timeout(implicit_timeout).unwrap();
 
         Selenium { driver }
