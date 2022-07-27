@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::error::Error;
+use std::io::{self, Write};
 use std::thread;
 use std::time::Duration;
 
@@ -21,7 +22,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     spoon_comment_viewer::login(&z, config.twitter_id(), config.twitter_password())?;
 
-    thread::sleep(Duration::from_secs(10)); //TODO: remove
+    {
+        print!("Press ENTER to continue: ");
+        io::stdout().flush().unwrap();
+        let mut buf = String::new();
+        io::stdin().read_line(&mut buf).unwrap();
+    }
 
     let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
     let mut previous_user: String = String::new(); //for combo comment
