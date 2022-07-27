@@ -24,3 +24,9 @@ pub fn login(z: &Selenium, twitter_id: &str, twitter_password: &str) -> Result<(
 
     Ok(())
 }
+
+pub fn comment(z: &Selenium, s: &str) -> Result<(), WebDriverError> {
+    z.input("textarea", s)?;
+    z.click("button[title='送信']")?;
+    Ok(())
+}

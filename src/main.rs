@@ -29,8 +29,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         io::stdin().read_line(&mut buf).unwrap();
     }
 
+    z.click("button[title='リスナー']")?; //opens the listeners tab in the sidebar
+
     let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
-    let mut previous_user: String = String::new(); //for combo comment
+    let mut previous_author: String = String::new(); //for combo comment
 
     loop {
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
@@ -90,12 +92,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                         tokens[1].to_string(),
                     );
                     println!("{}", comment);
-                    previous_user = String::from(comment.user());
+                    previous_author = String::from(comment.user());
                 }
 
                 CommentType::Combo => {
                     let comment =
-                        Comment::new(timestamp.clone(), previous_user.clone(), inner_text);
+                        Comment::new(timestamp.clone(), previous_author.clone(), inner_text);
                     println!("{}", comment);
                 }
 
