@@ -1,147 +1,13 @@
 use std::collections::HashSet;
 use std::error::Error;
-use std::fmt;
-use std::fmt::Display;
 use std::thread;
 use std::time::Duration;
 
-use chrono::offset::Local;
-use thirtyfour_sync::{error::WebDriverError, prelude::*, ElementId};
+use thirtyfour_sync::ElementId;
 
+use spoon_comment_viewer::comment::{Comment, CommentType};
 use spoon_comment_viewer::config::Config;
-
-const NO_COLOR: &str = "\u{001B}[0m";
-const COLOR: &str = "\u{001B}[095m";
-
-struct Comment {
-    timestamp: String,
-    user: String,
-    text: String,
-}
-impl Comment {
-    fn new(timestamp: String, user: String, text: String) -> Self {
-        Comment {
-            timestamp,
-            user,
-            text,
-        }
-    }
-}
-impl Display for Comment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}[{} ({})] {}: {}{}",
-            COLOR,
-            Local::now().format("%H:%M:%S"),
-            self.timestamp,
-            self.user,
-            NO_COLOR,
-            self.text
-        )
-    }
-}
-
-enum CommentType {
-    Message,
-    Combo,
-    Unknown,
-}
-impl<'a> CommentType {
-    const CLASS_NAME_MESSAGE: &'a str = " message";
-    const CLASS_NAME_COMBO: &'a str = " combo";
-
-    fn new(class_name: Option<String>) -> Self {
-        match class_name {
-            None => Self::Unknown,
-            Some(s) => {
-                if (s.ends_with(Self::CLASS_NAME_MESSAGE)) {
-                    Self::Message
-                } else if (s.ends_with(Self::CLASS_NAME_COMBO)) {
-                    Self::Combo
-                } else {
-                    Self::Unknown
-                }
-            }
-        }
-    }
-}
-
-struct Selenium {
-    driver: WebDriver,
-}
-
-impl Selenium {
-    fn new(webdriver_port: usize, implicit_timeout: Duration) -> Self {
-        let mut firefox = DesiredCapabilities::firefox();
-
-        //disables desktop notification
-        firefox
-            .add_firefox_option(
-                "prefs",
-                serde_json::json!({"permissions.default.desktop-notification": 1}),
-            )
-            .unwrap();
-
-        let driver = WebDriver::new(
-            format!("http://localhost:{}", webdriver_port).as_str(),
-            &firefox,
-        )
-        .unwrap();
-        driver.set_implicit_wait_timeout(implicit_timeout).unwrap();
-
-        Selenium { driver }
-    }
-
-    fn login(&self, twitter_id: &str, twitter_password: &str) -> Result<(), WebDriverError> {
-        self.driver.get("https://www.spooncast.net/jp/")?;
-
-        self.click(".btn-login")?;
-        self.click(".btn-twitter button")?;
-
-        self.switch_tab(1)?;
-
-        self.input("#username_or_email", twitter_id)?;
-        self.input("#password", twitter_password)?;
-        self.click("#allow")?;
-
-        self.switch_tab(0)?;
-
-        Ok(())
-    }
-
-    fn query(&self, css_selector: &str) -> Result<WebElement, WebDriverError> {
-        self.driver.find_element(By::Css(css_selector))
-    }
-
-    fn query_all(&self, css_selector: &str) -> Result<Vec<WebElement>, WebDriverError> {
-        self.driver.find_elements(By::Css(css_selector))
-    }
-
-    fn click(&self, css_selector: &str) -> Result<(), WebDriverError> {
-        self.query(css_selector).and_then(|e| e.click())
-    }
-
-    fn input(&self, css_selector: &str, s: &str) -> Result<(), WebDriverError> {
-        self.query(css_selector).and_then(|e| e.send_keys(s))
-    }
-
-    fn inner_text(&self, css_selector: &str) -> Result<String, WebDriverError> {
-        self.query(css_selector).and_then(|e| e.text())
-    }
-
-    fn switch_tab(&self, index: usize) -> Result<(), WebDriverError> {
-        self.driver
-            .switch_to()
-            .window(&(self.driver.window_handles().unwrap()[index]))
-    }
-}
-
-impl Drop for Selenium {
-    fn drop(&mut self) {
-        println!("Closing the driver...");
-    }
-}
+use spoon_comment_viewer::selenium::Selenium;
 
 const CONFIG_FILE: &str = "./config.json";
 
@@ -153,9 +19,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         Duration::from_millis(config.implicit_timeout_ms()),
     );
 
-    z.login(config.twitter_id(), config.twitter_password())?;
+    spoon_comment_viewer::login(&z, config.twitter_id(), config.twitter_password())?;
 
-    thread::sleep(Duration::from_secs(10));
+    thread::sleep(Duration::from_secs(10)); //TODO: remove
 
     let mut comment_set: HashSet<ElementId> = HashSet::new();
     let mut previous_user: String = String::new(); //for combo comment
@@ -211,7 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         tokens[1].to_string(),
                     );
                     println!("{}", comment);
-                    previous_user = comment.user.clone();
+                    previous_user = String::from(comment.user());
                 }
 
                 CommentType::Combo => {
