@@ -23,13 +23,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     thread::sleep(Duration::from_secs(10)); //TODO: remove
 
-    let mut comment_set: HashSet<ElementId> = HashSet::new();
+    let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
     let mut previous_user: String = String::new(); //for combo comment
 
     loop {
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
-        let l = match z.query_all("li.chat-list-item.message, li.chat-list-item.combo") {
+        let l = match z.query_all("li.chat-list-item") {
             Err(e) => {
                 println!("{}", e);
                 continue;
