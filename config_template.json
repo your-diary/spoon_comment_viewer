@@ -1,6 +1,7 @@
 {
     "twitter_id": "example",
     "twitter_password": "ejeew#!jfe35AB",
+    "comment_check_interval_ms": 1000,
     "webdriver_port": 4444,
     "implicit_timeout_ms": 5000
 }

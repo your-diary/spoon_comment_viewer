@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut previous_user: String = String::new(); //for combo comment
 
     loop {
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
         let l = match z.query_all("li.chat-list-item.message, li.chat-list-item.combo") {
             Err(e) => {
