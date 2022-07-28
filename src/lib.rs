@@ -255,6 +255,8 @@ pub fn process_listeners(
     // the list of listeners where `<live_id>` can be extracted from `SPOONCAST_JP_liveCurrentInfo`
     // in local storage.
     //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
+    //
+    //TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
     let listeners_set: HashSet<String> = {
         let mut listeners_list = Vec::new();
 
