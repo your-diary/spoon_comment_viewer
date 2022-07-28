@@ -4,7 +4,7 @@ pub mod constant;
 pub mod selenium;
 
 use std::collections::{HashMap, HashSet};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use chrono::offset::Local;
 use thirtyfour_sync::{error::WebDriverError, ElementId, WebDriverCommands};
@@ -136,6 +136,53 @@ pub fn process_comment(
 
 /*-------------------------------------*/
 
+fn pretty_print_duration(d: Duration) -> String {
+    let s = d.as_secs();
+    if (s <= 60) {
+        format!("{}秒", s)
+    } else if (s <= 3600) {
+        let min = s / 60;
+        let sec = s - min * 60;
+        format!("{}分{:02}秒", min, sec)
+    } else {
+        let hour = s / 3600;
+        let min = (s - hour * 3600) / 60;
+        let sec = s - hour * 3600 - min * 60;
+        format!("{}時間{:02}分{:02}秒", hour, min, sec)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_pretty_print_duration() {
+        assert_eq!(
+            "3秒",
+            super::pretty_print_duration(super::Duration::from_secs(3))
+        );
+        assert_eq!(
+            "60秒",
+            super::pretty_print_duration(super::Duration::from_secs(60))
+        );
+        assert_eq!(
+            "1分01秒",
+            super::pretty_print_duration(super::Duration::from_secs(61))
+        );
+        assert_eq!(
+            "60分00秒",
+            super::pretty_print_duration(super::Duration::from_secs(3600))
+        );
+        assert_eq!(
+            "1時間00分01秒",
+            super::pretty_print_duration(super::Duration::from_secs(3601))
+        );
+        assert_eq!(
+            "1時間10分15秒",
+            super::pretty_print_duration(super::Duration::from_secs(4215))
+        );
+    }
+}
+
 pub fn process_listeners(
     z: &Selenium,
     config: &Config,
@@ -173,30 +220,41 @@ pub fn process_listeners(
     for e in exited_listeners {
         if (previous_listeners_map.contains_key(&e)) {
             let c = format!(
-                "{}さん、また来てね。(滞在時間: {}秒)",
+                "{}さん、また来てね。(滞在時間: {})",
                 e,
-                previous_listeners_map.get(&e).unwrap().elapsed().as_secs()
-            ); //TODO: convert to comment
-               //TODO: pretty-print instead of `as_secs()`
+                pretty_print_duration(previous_listeners_map.get(&e).unwrap().elapsed()),
+            );
             print_listener(&c);
+            if (config.should_comment_listener()) {
+                comment(&z, &c)?;
+            }
             previous_listeners_map.remove(&e);
         } else {
             //unexpected to happen
-            let c = format!("{}さん、また来てね。", e); //TODO: convert to comment
+            let c = format!("{}さん、また来てね。", e);
             print_listener(&c);
+            if (config.should_comment_listener()) {
+                comment(&z, &c)?;
+            }
         }
     }
 
     for e in new_listeners {
         previous_listeners_map.insert(e.clone(), Instant::now());
         if (cumulative_listeners.contains(&e)) {
-            let c = format!("{}さん、おかえりなさい。", e); //TODO: convert to comment
+            let c = format!("{}さん、おかえりなさい。", e);
             print_listener(&c);
+            if (config.should_comment_listener()) {
+                comment(&z, &c)?;
+            }
         } else {
             cumulative_listeners.insert(e.clone());
             if (!is_first_call) {
-                let c = format!("{}さん、いらっしゃい。", e); //TODO
+                let c = format!("{}さん、いらっしゃい。", e);
                 print_listener(&c);
+                if (config.should_comment_listener()) {
+                    comment(&z, &c)?;
+                }
             }
         }
     }
