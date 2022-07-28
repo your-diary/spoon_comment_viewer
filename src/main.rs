@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use ctrlc;
 use thirtyfour_sync::ElementId;
 
 use spoon_comment_viewer::config::Config;
@@ -12,6 +14,13 @@ use spoon_comment_viewer::selenium::Selenium;
 const CONFIG_FILE: &str = "./config.json";
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let (tx, rx) = mpsc::channel();
+
+    ctrlc::set_handler(move || {
+        tx.send(0).unwrap();
+    })
+    .unwrap();
+
     let config = Config::new(CONFIG_FILE);
 
     let z = Selenium::new(
@@ -31,6 +40,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    if (rx.try_recv().is_ok()) {
+        return Ok(());
+    }
+
     z.click("button[title='リスナー']")?; //opens the listeners tab in the sidebar
 
     //comments
@@ -45,6 +58,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut c = -1;
     loop {
         c += 1;
+
+        if (rx.try_recv().is_ok()) {
+            break;
+        }
 
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
@@ -79,6 +96,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+
+    Ok(())
 }
 
 //     println!();
