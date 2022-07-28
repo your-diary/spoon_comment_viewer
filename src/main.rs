@@ -65,9 +65,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
+        let timestamp = z.inner_text(".time-chip-container span")?;
+
         match spoon_comment_viewer::process_comment(
             &z,
             &config,
+            &timestamp,
             &mut comment_set,
             &mut previous_author,
         ) {
@@ -84,6 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 &z,
                 &config,
                 /* is_first_call = */ c == 0,
+                &timestamp,
                 &mut previous_listeners_set,
                 &mut previous_listeners_map,
                 &mut cumulative_listeners,

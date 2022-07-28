@@ -42,27 +42,14 @@ pub fn comment(z: &Selenium, s: &str) -> Result<(), WebDriverError> {
 
 /*-------------------------------------*/
 
-fn print_comment(c: &Comment) {
+fn print(color: &str, s: &str, timestamp: &str) {
     println!(
-        "{}[{} ({})]{}{} {}: {}{}",
+        "{}[{} ({})]{}{} {}{}",
         constant::COLOR_BLACK,
         Local::now().format("%H:%M:%S"),
-        c.timestamp(),
+        timestamp,
         constant::NO_COLOR,
-        constant::COLOR_PURPLE,
-        c.user(),
-        constant::NO_COLOR,
-        c.text(),
-    );
-}
-
-fn print_listener(s: &str) {
-    println!(
-        "{}[{}]{}{} {}{}",
-        constant::COLOR_BLACK,
-        Local::now().format("%H:%M:%S"),
-        constant::NO_COLOR,
-        constant::COLOR_GREEN,
+        color,
         s,
         constant::NO_COLOR,
     );
@@ -73,12 +60,11 @@ fn print_listener(s: &str) {
 pub fn process_comment(
     z: &Selenium,
     config: &Config,
+    timestamp: &str,
     comment_set: &mut HashSet<ElementId>, //records existing comments
     previous_author: &mut String,         //for combo comment
 ) -> Result<(), WebDriverError> {
     let l = z.query_all("li.chat-list-item")?;
-
-    let timestamp = z.inner_text(".time-chip-container span")?;
 
     let num_new_comment = {
         let mut c = 0;
@@ -113,20 +99,24 @@ pub fn process_comment(
                     println!("Comment [ {} ] has an invalid form.", inner_text);
                     continue;
                 }
-                let comment = Comment::new(
-                    timestamp.clone(),
-                    tokens[0].to_string(),
-                    tokens[1].to_string(),
-                );
-                print_comment(&comment);
+                let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
+                print("", &comment.to_string(), timestamp);
                 *previous_author = String::from(comment.user());
             }
 
             CommentType::Combo => {
-                let comment = Comment::new(timestamp.clone(), previous_author.clone(), inner_text);
-                print_comment(&comment);
+                let comment = Comment::new(previous_author.clone(), inner_text);
+                print("", &comment.to_string(), timestamp);
             }
 
+            CommentType::Like => {
+                // let c = inner_text.replace("さんがハートを押したよ！", "");
+                //TODO
+            }
+
+            CommentType::Present => {
+                //TODO
+            }
             CommentType::Unknown => continue,
         }
     }
@@ -187,6 +177,7 @@ pub fn process_listeners(
     z: &Selenium,
     config: &Config,
     is_first_call: bool,
+    timestamp: &str,
     previous_listeners_set: &mut HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     previous_listeners_map: &mut HashMap<String, Instant>, //for `xxx秒の滞在でした`
     cumulative_listeners: &mut HashSet<String>,   //for `おかえりなさい`
@@ -224,7 +215,7 @@ pub fn process_listeners(
                 e,
                 pretty_print_duration(previous_listeners_map.get(&e).unwrap().elapsed()),
             );
-            print_listener(&c);
+            print(constant::COLOR_GREEN, &c, timestamp);
             if (config.should_comment_listener()) {
                 comment(&z, &c)?;
             }
@@ -232,7 +223,7 @@ pub fn process_listeners(
         } else {
             //unexpected to happen
             let c = format!("{}さん、また来てね。", e);
-            print_listener(&c);
+            print(constant::COLOR_GREEN, &c, timestamp);
             if (config.should_comment_listener()) {
                 comment(&z, &c)?;
             }
@@ -243,7 +234,7 @@ pub fn process_listeners(
         previous_listeners_map.insert(e.clone(), Instant::now());
         if (cumulative_listeners.contains(&e)) {
             let c = format!("{}さん、おかえりなさい。", e);
-            print_listener(&c);
+            print(constant::COLOR_GREEN, &c, timestamp);
             if (config.should_comment_listener()) {
                 comment(&z, &c)?;
             }
@@ -251,7 +242,7 @@ pub fn process_listeners(
             cumulative_listeners.insert(e.clone());
             if (!is_first_call) {
                 let c = format!("{}さん、いらっしゃい。", e);
-                print_listener(&c);
+                print(constant::COLOR_GREEN, &c, timestamp);
                 if (config.should_comment_listener()) {
                     comment(&z, &c)?;
                 }
