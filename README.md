@@ -1,6 +1,8 @@
 # 1. About
 
-Comment viewer and assistant bot for [Spoon](https://www.spooncast.net/jp/).
+配信サイト[Spoon](https://www.spooncast.net/jp/)のコメントビューア
+
+Cross-platform CUI comment viewer and assistant bot for [Spoon](https://www.spooncast.net/jp/).
 
 Fully written in Rust.
 
