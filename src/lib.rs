@@ -257,8 +257,12 @@ pub fn process_listeners(
     //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
     let listeners_set: HashSet<String> = {
         let mut listeners_list = Vec::new();
+
+        //temporarily sets a small implicit wait value
+        //Without this, we end up waiting long for `query_all()` to return when there is no listener.
         z.driver()
             .set_implicit_wait_timeout(Duration::from_millis(100))?;
+
         let l = match z.query_all("button p.name.text-box") {
             Err(e) => {
                 z.driver().set_implicit_wait_timeout(Duration::from_millis(
@@ -273,6 +277,7 @@ pub fn process_listeners(
                 o
             }
         };
+
         for e in l {
             match e.text() {
                 Err(e) => {
@@ -282,6 +287,7 @@ pub fn process_listeners(
                 Ok(s) => listeners_list.push(s),
             }
         }
+
         HashSet::from_iter(listeners_list.into_iter())
     };
 
