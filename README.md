@@ -6,6 +6,10 @@ Cross-platform CUI comment viewer and assistant bot for [Spoon](https://www.spoo
 
 Fully written in Rust.
 
+| [![](./readme_assets/demo.png)](https://www.youtube.com/watch?v=mWLUacHuatY) |
+| :-: |
+| Demo (YouTube) |
+
 # 2. Requirements
 
 - [Rust](https://www.rust-lang.org/)
@@ -15,7 +19,7 @@ Fully written in Rust.
 # 3. Usage
 
 ```bash
-$ cargo run
+$ cargo run --release
 ```
 
 # 4. Configurations
