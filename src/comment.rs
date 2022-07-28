@@ -3,10 +3,7 @@ use std::fmt::Display;
 
 use chrono::offset::Local;
 
-/*-------------------------------------*/
-
-const NO_COLOR: &str = "\u{001B}[0m";
-const COLOR: &str = "\u{001B}[095m";
+use crate::constant;
 
 /*-------------------------------------*/
 
@@ -34,11 +31,11 @@ impl Display for Comment {
         write!(
             f,
             "{}[{} ({})] {}: {}{}",
-            COLOR,
+            constant::COLOR_PURPLE,
             Local::now().format("%H:%M:%S"),
             self.timestamp,
             self.user,
-            NO_COLOR,
+            constant::NO_COLOR,
             self.text
         )
     }

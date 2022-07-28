@@ -10,6 +10,10 @@ pub struct Config {
     twitter_id: String,
     twitter_password: String,
     comment_check_interval_ms: u64,
+    listener_check_interval_ratio: usize,
+    should_comment_listener: bool,
+    should_comment_heart: bool,
+    should_comment_spoon: bool,
     webdriver_port: usize,
     implicit_timeout_ms: u64,
 }
@@ -20,6 +24,10 @@ impl Config {
             twitter_id: String::new(),
             twitter_password: String::new(),
             comment_check_interval_ms: 0,
+            listener_check_interval_ratio: 0,
+            should_comment_listener: false,
+            should_comment_heart: false,
+            should_comment_spoon: false,
             webdriver_port: 0,
             implicit_timeout_ms: 0,
         };
@@ -51,6 +59,17 @@ impl Config {
                     .unwrap()
                     .as_u64()
                     .unwrap();
+                ret.listener_check_interval_ratio = o
+                    .get("listener_check_interval_ratio")
+                    .unwrap()
+                    .as_usize()
+                    .unwrap();
+                ret.should_comment_listener =
+                    o.get("should_comment_listener").unwrap().as_bool().unwrap();
+                ret.should_comment_heart =
+                    o.get("should_comment_heart").unwrap().as_bool().unwrap();
+                ret.should_comment_spoon =
+                    o.get("should_comment_spoon").unwrap().as_bool().unwrap();
                 ret.webdriver_port = o.get("webdriver_port").unwrap().as_usize().unwrap();
                 ret.implicit_timeout_ms = o.get("implicit_timeout_ms").unwrap().as_u64().unwrap();
             }
@@ -60,6 +79,7 @@ impl Config {
         assert!(!ret.twitter_id.is_empty());
         assert!(!ret.twitter_password.is_empty());
         assert!(ret.comment_check_interval_ms != 0);
+        assert!(ret.listener_check_interval_ratio > 0);
         assert!(ret.webdriver_port != 0);
         assert!(ret.implicit_timeout_ms != 0);
 
@@ -76,6 +96,22 @@ impl Config {
 
     pub fn comment_check_interval_ms(&self) -> u64 {
         self.comment_check_interval_ms
+    }
+
+    pub fn listener_check_interval_ratio(&self) -> usize {
+        self.listener_check_interval_ratio
+    }
+
+    pub fn should_comment_listener(&self) -> bool {
+        self.should_comment_listener
+    }
+
+    pub fn should_comment_heart(&self) -> bool {
+        self.should_comment_heart
+    }
+
+    pub fn should_comment_spoon(&self) -> bool {
+        self.should_comment_spoon
     }
 
     pub fn webdriver_port(&self) -> usize {

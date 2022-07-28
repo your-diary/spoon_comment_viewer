@@ -33,23 +33,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     z.click("button[title='リスナー']")?; //opens the listeners tab in the sidebar
 
+    //comments
+    let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
+    let mut previous_author: String = String::new(); //for combo comment
+
     //listeners
     let mut previous_listeners_set: HashSet<String> = HashSet::new(); //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     let mut previous_listeners_map: HashMap<String, Instant> = HashMap::new(); //for `xxx秒の滞在でした`
     let mut cumulative_listeners: HashSet<String> = HashSet::new(); //for `おかえりなさい`
 
-    //comments
-    let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
-    let mut previous_author: String = String::new(); //for combo comment
-
+    let mut c = 0;
     loop {
+        c += 1;
+
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
-        match spoon_comment_viewer::process_listeners(
+        match spoon_comment_viewer::process_comment(
             &z,
-            &mut previous_listeners_set,
-            &mut previous_listeners_map,
-            &mut cumulative_listeners,
+            &config,
+            &mut comment_set,
+            &mut previous_author,
         ) {
             Err(e) => {
                 println!("{}", e);
@@ -58,12 +61,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             _ => (),
         }
 
-        match spoon_comment_viewer::process_comment(&z, &mut comment_set, &mut previous_author) {
-            Err(e) => {
-                println!("{}", e);
-                continue;
+        //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
+        if (c % config.listener_check_interval_ratio() == 0) {
+            match spoon_comment_viewer::process_listeners(
+                &z,
+                &config,
+                &mut previous_listeners_set,
+                &mut previous_listeners_map,
+                &mut cumulative_listeners,
+            ) {
+                Err(e) => {
+                    println!("{}", e);
+                    continue;
+                }
+                _ => (),
             }
-            _ => (),
         }
     }
 }

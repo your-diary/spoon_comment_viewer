@@ -1,5 +1,6 @@
 pub mod comment;
 pub mod config;
+pub mod constant;
 pub mod selenium;
 
 use std::collections::{HashMap, HashSet};
@@ -8,6 +9,7 @@ use std::time::Instant;
 use thirtyfour_sync::{error::WebDriverError, ElementId, WebDriverCommands};
 
 use comment::{Comment, CommentType};
+use config::Config;
 use selenium::Selenium;
 
 /*-------------------------------------*/
@@ -39,72 +41,9 @@ pub fn comment(z: &Selenium, s: &str) -> Result<(), WebDriverError> {
 
 /*-------------------------------------*/
 
-pub fn process_listeners(
-    z: &Selenium,
-    previous_listeners_set: &mut HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
-    previous_listeners_map: &mut HashMap<String, Instant>, //for `xxx秒の滞在でした`
-    cumulative_listeners: &mut HashSet<String>,   //for `おかえりなさい`
-) -> Result<(), WebDriverError> {
-    z.click("div.user-list-wrap button[title='再読み込み']")?;
-
-    //retrieves the list of the names of current listeners
-    //
-    //We can instead GET `https://jp-api.spooncast.net/lives/<live_id>/listeners/` to retrieve
-    // the list of listeners where `<live_id>` can be extracted from `SPOONCAST_JP_liveCurrentInfo`
-    // in local storage.
-    //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
-    let listeners_set: HashSet<String> = {
-        let mut listeners_list = Vec::new();
-        let l = z.query_all("button p.name.text-box")?;
-        for e in l {
-            match e.text() {
-                Err(e) => {
-                    println!("{}", e);
-                    continue;
-                }
-                Ok(s) => listeners_list.push(s),
-            }
-        }
-        HashSet::from_iter(listeners_list.into_iter())
-    };
-
-    let exited_listeners = &*previous_listeners_set - &listeners_set;
-    let new_listeners = &listeners_set - &previous_listeners_set;
-
-    for e in exited_listeners {
-        if (previous_listeners_map.contains_key(&e)) {
-            println!(
-                "{}さん、また来てね。(滞在時間: {}秒)",
-                e,
-                previous_listeners_map.get(&e).unwrap().elapsed().as_secs()
-            ); //TODO: convert to comment
-               //TODO: pretty-print instead of `as_secs()`
-            previous_listeners_map.remove(&e);
-        } else {
-            //unexpected to happen
-            println!("{}さん、また来てね。", e); //TODO: convert to comment
-        }
-    }
-
-    for e in new_listeners {
-        previous_listeners_map.insert(e.clone(), Instant::now());
-        if (cumulative_listeners.contains(&e)) {
-            println!("{}さん、おかえりなさい。", e); //TODO: convert to comment
-        } else {
-            cumulative_listeners.insert(e.clone());
-            println!("{}さん、いらっしゃい。", e); //TODO: convert to comment
-        }
-    }
-
-    *previous_listeners_set = listeners_set;
-
-    Ok(())
-}
-
-/*-------------------------------------*/
-
 pub fn process_comment(
     z: &Selenium,
+    config: &Config,
     comment_set: &mut HashSet<ElementId>, //records existing comments
     previous_author: &mut String,         //for combo comment
 ) -> Result<(), WebDriverError> {
@@ -162,6 +101,71 @@ pub fn process_comment(
             CommentType::Unknown => continue,
         }
     }
+
+    Ok(())
+}
+
+/*-------------------------------------*/
+
+pub fn process_listeners(
+    z: &Selenium,
+    config: &Config,
+    previous_listeners_set: &mut HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
+    previous_listeners_map: &mut HashMap<String, Instant>, //for `xxx秒の滞在でした`
+    cumulative_listeners: &mut HashSet<String>,   //for `おかえりなさい`
+) -> Result<(), WebDriverError> {
+    z.click("div.user-list-wrap button[title='再読み込み']")?;
+
+    //retrieves the list of the names of current listeners
+    //
+    //We can instead GET `https://jp-api.spooncast.net/lives/<live_id>/listeners/` to retrieve
+    // the list of listeners where `<live_id>` can be extracted from `SPOONCAST_JP_liveCurrentInfo`
+    // in local storage.
+    //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
+    let listeners_set: HashSet<String> = {
+        let mut listeners_list = Vec::new();
+        let l = z.query_all("button p.name.text-box")?;
+        for e in l {
+            match e.text() {
+                Err(e) => {
+                    println!("{}", e);
+                    continue;
+                }
+                Ok(s) => listeners_list.push(s),
+            }
+        }
+        HashSet::from_iter(listeners_list.into_iter())
+    };
+
+    let exited_listeners = &*previous_listeners_set - &listeners_set;
+    let new_listeners = &listeners_set - &previous_listeners_set;
+
+    for e in exited_listeners {
+        if (previous_listeners_map.contains_key(&e)) {
+            println!(
+                "{}さん、また来てね。(滞在時間: {}秒)",
+                e,
+                previous_listeners_map.get(&e).unwrap().elapsed().as_secs()
+            ); //TODO: convert to comment
+               //TODO: pretty-print instead of `as_secs()`
+            previous_listeners_map.remove(&e);
+        } else {
+            //unexpected to happen
+            println!("{}さん、また来てね。", e); //TODO: convert to comment
+        }
+    }
+
+    for e in new_listeners {
+        previous_listeners_map.insert(e.clone(), Instant::now());
+        if (cumulative_listeners.contains(&e)) {
+            println!("{}さん、おかえりなさい。", e); //TODO: convert to comment
+        } else {
+            cumulative_listeners.insert(e.clone());
+            println!("{}さん、いらっしゃい。", e); //TODO: convert to comment
+        }
+    }
+
+    *previous_listeners_set = listeners_set;
 
     Ok(())
 }
