@@ -263,6 +263,7 @@ pub fn process_listeners(
         z.driver()
             .set_implicit_wait_timeout(Duration::from_millis(100))?;
 
+        //`未ログインユーザー<n>人` is not included as it's not a button.
         let l = match z.query_all("button p.name.text-box") {
             Err(e) => {
                 z.driver().set_implicit_wait_timeout(Duration::from_millis(
