@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut previous_listeners_map: HashMap<String, Instant> = HashMap::new(); //for `xxx秒の滞在でした`
     let mut cumulative_listeners: HashSet<String> = HashSet::new(); //for `おかえりなさい`
 
-    let mut c = 0;
+    let mut c = -1;
     loop {
         c += 1;
 
@@ -62,10 +62,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
-        if (c % config.listener_check_interval_ratio() == 0) {
+        if ((c as usize) % config.listener_check_interval_ratio() == 0) {
             match spoon_comment_viewer::process_listeners(
                 &z,
                 &config,
+                /* is_first_call = */ c == 0,
                 &mut previous_listeners_set,
                 &mut previous_listeners_map,
                 &mut cumulative_listeners,

@@ -1,10 +1,3 @@
-use std::fmt;
-use std::fmt::Display;
-
-use chrono::offset::Local;
-
-use crate::constant;
-
 /*-------------------------------------*/
 
 pub struct Comment {
@@ -21,23 +14,14 @@ impl Comment {
             text,
         }
     }
+    pub fn timestamp(&self) -> &str {
+        &self.timestamp
+    }
     pub fn user(&self) -> &str {
         &self.user
     }
-}
-
-impl Display for Comment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}[{} ({})] {}: {}{}",
-            constant::COLOR_PURPLE,
-            Local::now().format("%H:%M:%S"),
-            self.timestamp,
-            self.user,
-            constant::NO_COLOR,
-            self.text
-        )
+    pub fn text(&self) -> &str {
+        &self.text
     }
 }
 

@@ -6,6 +6,7 @@ pub mod selenium;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 
+use chrono::offset::Local;
 use thirtyfour_sync::{error::WebDriverError, ElementId, WebDriverCommands};
 
 use comment::{Comment, CommentType};
@@ -37,6 +38,34 @@ pub fn comment(z: &Selenium, s: &str) -> Result<(), WebDriverError> {
     z.input("textarea", s)?;
     z.click("button[title='送信']")?;
     Ok(())
+}
+
+/*-------------------------------------*/
+
+fn print_comment(c: &Comment) {
+    println!(
+        "{}[{} ({})]{}{} {}: {}{}",
+        constant::COLOR_BLACK,
+        Local::now().format("%H:%M:%S"),
+        c.timestamp(),
+        constant::NO_COLOR,
+        constant::COLOR_PURPLE,
+        c.user(),
+        constant::NO_COLOR,
+        c.text(),
+    );
+}
+
+fn print_listener(s: &str) {
+    println!(
+        "{}[{}]{}{} {}{}",
+        constant::COLOR_BLACK,
+        Local::now().format("%H:%M:%S"),
+        constant::NO_COLOR,
+        constant::COLOR_GREEN,
+        s,
+        constant::NO_COLOR,
+    );
 }
 
 /*-------------------------------------*/
@@ -89,13 +118,13 @@ pub fn process_comment(
                     tokens[0].to_string(),
                     tokens[1].to_string(),
                 );
-                println!("{}", comment);
+                print_comment(&comment);
                 *previous_author = String::from(comment.user());
             }
 
             CommentType::Combo => {
                 let comment = Comment::new(timestamp.clone(), previous_author.clone(), inner_text);
-                println!("{}", comment);
+                print_comment(&comment);
             }
 
             CommentType::Unknown => continue,
@@ -110,6 +139,7 @@ pub fn process_comment(
 pub fn process_listeners(
     z: &Selenium,
     config: &Config,
+    is_first_call: bool,
     previous_listeners_set: &mut HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     previous_listeners_map: &mut HashMap<String, Instant>, //for `xxx秒の滞在でした`
     cumulative_listeners: &mut HashSet<String>,   //for `おかえりなさい`
@@ -142,26 +172,32 @@ pub fn process_listeners(
 
     for e in exited_listeners {
         if (previous_listeners_map.contains_key(&e)) {
-            println!(
+            let c = format!(
                 "{}さん、また来てね。(滞在時間: {}秒)",
                 e,
                 previous_listeners_map.get(&e).unwrap().elapsed().as_secs()
             ); //TODO: convert to comment
                //TODO: pretty-print instead of `as_secs()`
+            print_listener(&c);
             previous_listeners_map.remove(&e);
         } else {
             //unexpected to happen
-            println!("{}さん、また来てね。", e); //TODO: convert to comment
+            let c = format!("{}さん、また来てね。", e); //TODO: convert to comment
+            print_listener(&c);
         }
     }
 
     for e in new_listeners {
         previous_listeners_map.insert(e.clone(), Instant::now());
         if (cumulative_listeners.contains(&e)) {
-            println!("{}さん、おかえりなさい。", e); //TODO: convert to comment
+            let c = format!("{}さん、おかえりなさい。", e); //TODO: convert to comment
+            print_listener(&c);
         } else {
             cumulative_listeners.insert(e.clone());
-            println!("{}さん、いらっしゃい。", e); //TODO: convert to comment
+            if (!is_first_call) {
+                let c = format!("{}さん、いらっしゃい。", e); //TODO
+                print_listener(&c);
+            }
         }
     }
 
