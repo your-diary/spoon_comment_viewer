@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 use chrono::offset::Local;
+use regex::Regex;
 use thirtyfour_sync::{error::WebDriverError, ElementId, WebDriverCommands};
 
 use comment::{Comment, CommentType};
@@ -96,7 +97,7 @@ pub fn process_comment(
             CommentType::Message => {
                 let tokens: Vec<&str> = inner_text.splitn(2, "\n").collect();
                 if (tokens.len() != 2) {
-                    println!("Comment [ {} ] has an invalid form.", inner_text);
+                    println!("Comment [ {} ] has an unexpected form.", inner_text);
                     continue;
                 }
                 let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
@@ -110,12 +111,76 @@ pub fn process_comment(
             }
 
             CommentType::Like => {
-                // let c = inner_text.replace("さんがハートを押したよ！", "");
-                //TODO
+                let c = format!(
+                    "{}さん、ハートありがとう。",
+                    inner_text.replace("さんがハートを押したよ！", "")
+                );
+                print(constant::COLOR_YELLOW, &c, timestamp);
+                if (config.should_comment_heart()) {
+                    comment(&z, &c)?;
+                }
             }
 
             CommentType::Present => {
-                //TODO
+                let pat = Regex::new(r#"^([^\n]*)\n+(.*Spoon.*|ハート.*)$"#).unwrap();
+                match pat.captures(&inner_text) {
+                    None => (),
+                    Some(groups) => {
+                        if (groups.len() != 3) {
+                            println!("Present [ {} ] has an unexpected form.", inner_text);
+                            continue;
+                        }
+
+                        //buster
+                        if (groups.get(2).unwrap().as_str().starts_with("ハート")) {
+                            print(
+                                "",
+                                &format!(
+                                    "{}{}:{} {}",
+                                    constant::COLOR_RED,
+                                    groups.get(1).unwrap().as_str(),
+                                    constant::NO_COLOR,
+                                    groups.get(2).unwrap().as_str(),
+                                ),
+                                timestamp,
+                            );
+
+                            if (config.should_comment_spoon()) {
+                                comment(
+                                    &z,
+                                    &format!(
+                                        "{}さん、バスターありがとう。",
+                                        groups.get(1).unwrap().as_str(),
+                                    ),
+                                )?;
+                            }
+
+                        //spoon
+                        } else {
+                            print(
+                                "",
+                                &format!(
+                                    "{}{}:{} {}",
+                                    constant::COLOR_CYAN,
+                                    groups.get(1).unwrap().as_str(),
+                                    constant::NO_COLOR,
+                                    groups.get(2).unwrap().as_str(),
+                                ),
+                                timestamp,
+                            );
+
+                            if (config.should_comment_spoon()) {
+                                comment(
+                                    &z,
+                                    &format!(
+                                        "{}さん、スプーンありがとう。",
+                                        groups.get(1).unwrap().as_str(),
+                                    ),
+                                )?;
+                            }
+                        }
+                    }
+                }
             }
             CommentType::Unknown => continue,
         }
@@ -192,7 +257,22 @@ pub fn process_listeners(
     //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
     let listeners_set: HashSet<String> = {
         let mut listeners_list = Vec::new();
-        let l = z.query_all("button p.name.text-box")?;
+        z.driver()
+            .set_implicit_wait_timeout(Duration::from_millis(100))?;
+        let l = match z.query_all("button p.name.text-box") {
+            Err(e) => {
+                z.driver().set_implicit_wait_timeout(Duration::from_millis(
+                    config.implicit_timeout_ms(),
+                ))?;
+                return Err(e);
+            }
+            Ok(o) => {
+                z.driver().set_implicit_wait_timeout(Duration::from_millis(
+                    config.implicit_timeout_ms(),
+                ))?;
+                o
+            }
+        };
         for e in l {
             match e.text() {
                 Err(e) => {

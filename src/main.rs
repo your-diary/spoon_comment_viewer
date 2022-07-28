@@ -44,7 +44,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    z.click("button[title='リスナー']")?; //opens the listeners tab in the sidebar
+    //tries to open the listeners tab in the sidebar
+    //We intentionally ignore the result as this operation fails when the tab is already open.
+    let _ = z.click("button[title='リスナー']");
 
     //comments
     let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
