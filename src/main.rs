@@ -67,7 +67,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
 
-        let timestamp = z.inner_text(".time-chip-container span")?;
+        let timestamp = match z.inner_text(".time-chip-container span") {
+            Err(e) => {
+                println!("{}", e);
+                continue;
+            }
+            Ok(t) => t,
+        };
 
         match spoon_comment_viewer::process_comment(
             &z,
