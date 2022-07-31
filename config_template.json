@@ -6,6 +6,7 @@
     "should_comment_listener": false,
     "should_comment_heart": false,
     "should_comment_spoon": false,
+    "should_comment_guide": false,
     "webdriver_port": 4444,
     "implicit_timeout_ms": 5000
 }

@@ -110,6 +110,16 @@ pub fn process_comment(
                 print("", &comment.to_string(), timestamp);
             }
 
+            CommentType::Guide => {
+                let c = format!("{}", inner_text.replace("分前だよ！", "分前だよ"));
+                print(constant::COLOR_WHITE, &c, timestamp);
+                if (inner_text.contains("分前だよ")) {
+                    if (config.should_comment_guide()) {
+                        comment(&z, &c)?;
+                    }
+                }
+            }
+
             CommentType::Like => {
                 let c = format!(
                     "{}さん、ハートありがとう。",

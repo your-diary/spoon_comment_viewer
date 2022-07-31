@@ -41,6 +41,7 @@ pub enum CommentType {
     Combo,
     Like,
     Present, //spoon, buster
+    Guide,   //`配信終了10分前だよ！` etc.
     Unknown,
 }
 
@@ -49,6 +50,7 @@ impl<'a> CommentType {
     const CLASS_NAME_COMBO: &'a str = " combo";
     const CLASS_NAME_LIKE: &'a str = " like";
     const CLASS_NAME_PRESENT: &'a str = " present";
+    const CLASS_NAME_GUIDE: &'a str = " guide";
 
     pub fn new(class_name: Option<String>) -> Self {
         match class_name {
@@ -62,6 +64,8 @@ impl<'a> CommentType {
                     Self::Like
                 } else if (s.ends_with(Self::CLASS_NAME_PRESENT)) {
                     Self::Present
+                } else if (s.ends_with(Self::CLASS_NAME_GUIDE)) {
+                    Self::Guide
                 } else {
                     Self::Unknown
                 }

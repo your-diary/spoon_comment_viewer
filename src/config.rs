@@ -14,6 +14,7 @@ pub struct Config {
     should_comment_listener: bool,
     should_comment_heart: bool,
     should_comment_spoon: bool,
+    should_comment_guide: bool,
     webdriver_port: usize,
     implicit_timeout_ms: u64,
 }
@@ -28,6 +29,7 @@ impl Config {
             should_comment_listener: false,
             should_comment_heart: false,
             should_comment_spoon: false,
+            should_comment_guide: false,
             webdriver_port: 0,
             implicit_timeout_ms: 0,
         };
@@ -70,6 +72,8 @@ impl Config {
                     o.get("should_comment_heart").unwrap().as_bool().unwrap();
                 ret.should_comment_spoon =
                     o.get("should_comment_spoon").unwrap().as_bool().unwrap();
+                ret.should_comment_guide =
+                    o.get("should_comment_guide").unwrap().as_bool().unwrap();
                 ret.webdriver_port = o.get("webdriver_port").unwrap().as_usize().unwrap();
                 ret.implicit_timeout_ms = o.get("implicit_timeout_ms").unwrap().as_u64().unwrap();
             }
@@ -112,6 +116,10 @@ impl Config {
 
     pub fn should_comment_spoon(&self) -> bool {
         self.should_comment_spoon
+    }
+
+    pub fn should_comment_guide(&self) -> bool {
+        self.should_comment_guide
     }
 
     pub fn webdriver_port(&self) -> usize {
