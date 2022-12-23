@@ -105,7 +105,9 @@ pub fn process_comment(
                 }
                 let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
                 print("", &comment.to_string(), timestamp);
-                chatgpt.complete_and_say(comment.text());
+                if (comment.user() != config.chatgpt_excluded_user()) {
+                    chatgpt.complete_and_say(comment.text());
+                }
                 *previous_author = String::from(comment.user());
             }
 

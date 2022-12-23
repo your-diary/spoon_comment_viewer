@@ -19,6 +19,7 @@ pub struct Config {
     implicit_timeout_ms: u64,
     chatgpt_enabled: bool,
     chatgpt_project_dir: String,
+    chatgpt_excluded_user: String,
 }
 
 impl Config {
@@ -36,6 +37,7 @@ impl Config {
             implicit_timeout_ms: 0,
             chatgpt_enabled: false,
             chatgpt_project_dir: String::new(),
+            chatgpt_excluded_user: String::new(),
         };
 
         let json_string: String = {
@@ -88,6 +90,12 @@ impl Config {
                     .unwrap()
                     .replace('~', &std::env::var("HOME").unwrap())
                     .to_string();
+                ret.chatgpt_excluded_user = o
+                    .get("chatgpt_excluded_user")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string();
             }
             _ => panic!(),
         }
@@ -99,6 +107,7 @@ impl Config {
         assert!(ret.webdriver_port != 0);
         assert!(ret.implicit_timeout_ms != 0);
         assert!(!ret.chatgpt_project_dir.is_empty());
+        assert!(!ret.chatgpt_excluded_user.is_empty());
 
         ret
     }
@@ -149,5 +158,9 @@ impl Config {
 
     pub fn chatgpt_project_dir(&self) -> &str {
         &self.chatgpt_project_dir
+    }
+
+    pub fn chatgpt_excluded_user(&self) -> &str {
+        &self.chatgpt_excluded_user
     }
 }
