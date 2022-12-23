@@ -17,8 +17,8 @@ pub struct Config {
     should_comment_guide: bool,
     webdriver_port: usize,
     implicit_timeout_ms: u64,
-    chatgpt_binary_path: String,
     chatgpt_enabled: bool,
+    chatgpt_project_dir: String,
 }
 
 impl Config {
@@ -34,8 +34,8 @@ impl Config {
             should_comment_guide: false,
             webdriver_port: 0,
             implicit_timeout_ms: 0,
-            chatgpt_binary_path: String::new(),
             chatgpt_enabled: false,
+            chatgpt_project_dir: String::new(),
         };
 
         let json_string: String = {
@@ -81,8 +81,8 @@ impl Config {
                 ret.webdriver_port = o.get("webdriver_port").unwrap().as_usize().unwrap();
                 ret.implicit_timeout_ms = o.get("implicit_timeout_ms").unwrap().as_u64().unwrap();
                 ret.chatgpt_enabled = o.get("chatgpt_enabled").unwrap().as_bool().unwrap();
-                ret.chatgpt_binary_path = o
-                    .get("chatgpt_binary_path")
+                ret.chatgpt_project_dir = o
+                    .get("chatgpt_project_dir")
                     .unwrap()
                     .as_str()
                     .unwrap()
@@ -98,7 +98,7 @@ impl Config {
         assert!(ret.listener_check_interval_ratio > 0);
         assert!(ret.webdriver_port != 0);
         assert!(ret.implicit_timeout_ms != 0);
-        assert!(!ret.chatgpt_binary_path.is_empty());
+        assert!(!ret.chatgpt_project_dir.is_empty());
 
         ret
     }
@@ -147,7 +147,7 @@ impl Config {
         self.chatgpt_enabled
     }
 
-    pub fn chatgpt_binary_path(&self) -> &str {
-        &self.chatgpt_binary_path
+    pub fn chatgpt_project_dir(&self) -> &str {
+        &self.chatgpt_project_dir
     }
 }

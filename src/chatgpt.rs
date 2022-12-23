@@ -2,7 +2,6 @@ use super::config::Config;
 
 use std::env;
 use std::io::{BufWriter, Write};
-use std::path::Path;
 use std::process::{ChildStdin, Command, Stdio};
 
 pub struct ChatGPT {
@@ -18,9 +17,9 @@ impl ChatGPT {
                 stdin: None,
             }
         } else {
-            env::set_current_dir(Path::new(&config.chatgpt_binary_path()).parent().unwrap())
-                .unwrap();
-            let child = Command::new(&config.chatgpt_binary_path())
+            env::set_current_dir(&config.chatgpt_project_dir()).unwrap();
+            let child = Command::new("cargo")
+                .args(["run"])
                 .stdin(Stdio::piped())
                 .spawn()
                 .unwrap();
