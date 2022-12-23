@@ -1,3 +1,4 @@
+pub mod chatgpt;
 pub mod comment;
 pub mod config;
 pub mod constant;
@@ -10,6 +11,7 @@ use chrono::offset::Local;
 use regex::Regex;
 use thirtyfour_sync::{error::WebDriverError, ElementId, WebDriverCommands};
 
+use chatgpt::ChatGPT;
 use comment::{Comment, CommentType};
 use config::Config;
 use selenium::Selenium;
@@ -64,6 +66,7 @@ pub fn process_comment(
     timestamp: &str,
     comment_set: &mut HashSet<ElementId>, //records existing comments
     previous_author: &mut String,         //for combo comment
+    chatgpt: &mut ChatGPT,
 ) -> Result<(), WebDriverError> {
     let l = z.query_all("li.chat-list-item")?;
 
@@ -102,6 +105,7 @@ pub fn process_comment(
                 }
                 let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
                 print("", &comment.to_string(), timestamp);
+                chatgpt.complete_and_say(comment.text());
                 *previous_author = String::from(comment.user());
             }
 

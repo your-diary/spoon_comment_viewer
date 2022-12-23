@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use ctrlc;
 use thirtyfour_sync::ElementId;
 
+use spoon_comment_viewer::chatgpt::ChatGPT;
 use spoon_comment_viewer::config::Config;
 use spoon_comment_viewer::selenium::Selenium;
 
@@ -22,6 +23,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     .unwrap();
 
     let config = Config::new(CONFIG_FILE);
+
+    let mut chatgpt = ChatGPT::new(&config);
 
     let z = Selenium::new(
         config.webdriver_port(),
@@ -81,6 +84,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             &timestamp,
             &mut comment_set,
             &mut previous_author,
+            &mut chatgpt,
         ) {
             Err(e) => {
                 println!("{}", e);
