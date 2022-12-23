@@ -103,12 +103,14 @@ pub fn process_comment(
                     println!("Comment [ {} ] has an unexpected form.", inner_text);
                     continue;
                 }
-                let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
-                print("", &comment.to_string(), timestamp);
-                if (comment.user() != config.chatgpt_excluded_user()) {
-                    chatgpt.complete_and_say(comment.text());
+                let message = Comment::new(tokens[0].to_string(), tokens[1].to_string());
+                print("", &message.to_string(), timestamp);
+                if (message.user() != config.chatgpt_excluded_user()) {
+                    if let Some(s) = chatgpt.complete_and_say(message.text()) {
+                        comment(&z, s.trim())?;
+                    }
                 }
-                *previous_author = String::from(comment.user());
+                *previous_author = String::from(message.user());
             }
 
             CommentType::Combo => {
