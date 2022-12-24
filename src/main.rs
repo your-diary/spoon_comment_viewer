@@ -1,16 +1,13 @@
-use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::io::{self, Write};
 use std::sync::mpsc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use ctrlc;
-use thirtyfour_sync::ElementId;
 
-use spoon_comment_viewer::chatgpt::ChatGPT;
 use spoon_comment_viewer::config::Config;
-use spoon_comment_viewer::selenium::Selenium;
+use spoon_comment_viewer::spoon::Spoon;
 
 const CONFIG_FILE: &str = "./config.json";
 
@@ -24,17 +21,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let config = Config::new(CONFIG_FILE);
 
-    let mut chatgpt = ChatGPT::new(&config);
-
-    let z = Selenium::new(
-        config.selenium.webdriver_port,
-        Duration::from_millis(config.selenium.implicit_timeout_ms),
-    );
-
-    spoon_comment_viewer::login(&z, &config.twitter.id, &config.twitter.password)?;
+    let mut spoon = Spoon::new(&config);
+    spoon.login(
+        &config.spoon.url,
+        &config.twitter.id,
+        &config.twitter.password,
+    )?;
 
     {
-        print!("Press ENTER to continue: ");
+        print!("Press ENTER after you have started a live: ");
         io::stdout().flush().unwrap();
         let mut buf = String::new();
         io::stdin().read_line(&mut buf).unwrap();
@@ -47,20 +42,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    //tries to open the listeners tab in the sidebar
-    //We intentionally ignore the result as this operation fails when the tab is already open.
-    let _ = z.click("button[title='リスナー']");
+    spoon.init();
 
-    //comments
-    let mut comment_set: HashSet<ElementId> = HashSet::new(); //records existing comments
-    let mut previous_author: String = String::new(); //for combo comment
-
-    //listeners
-    let mut previous_listeners_set: HashSet<String> = HashSet::new(); //for `いらっしゃい`, `おかえりなさい`, `またきてね`
-    let mut previous_listeners_map: HashMap<String, Instant> = HashMap::new(); //for `xxx秒の滞在でした`
-    let mut cumulative_listeners: HashSet<String> = HashSet::new(); //for `おかえりなさい`
-
-    let mut c = -1;
+    let mut c = -1isize;
     loop {
         c += 1;
 
@@ -72,22 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             config.spoon.comment_check_interval_ms,
         ));
 
-        let timestamp = match z.inner_text(".time-chip-container span") {
-            Err(e) => {
-                println!("{}", e);
-                continue;
-            }
-            Ok(t) => t,
-        };
-
-        match spoon_comment_viewer::process_comment(
-            &z,
-            &config,
-            &timestamp,
-            &mut comment_set,
-            &mut previous_author,
-            &mut chatgpt,
-        ) {
+        match spoon.process_comment(&config) {
             Err(e) => {
                 println!("{}", e);
                 continue;
@@ -97,15 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
         if ((c as usize) % config.spoon.listener_check_interval_ratio == 0) {
-            match spoon_comment_viewer::process_listeners(
-                &z,
-                &config,
-                /* is_first_call = */ c == 0,
-                &timestamp,
-                &mut previous_listeners_set,
-                &mut previous_listeners_map,
-                &mut cumulative_listeners,
-            ) {
+            match spoon.process_listeners(&config) {
                 Err(e) => {
                     println!("{}", e);
                     continue;

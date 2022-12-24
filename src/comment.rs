@@ -37,11 +37,11 @@ impl Display for Comment {
 /*-------------------------------------*/
 
 pub enum CommentType {
-    Message,
-    Combo,
-    Like,
+    Message, //normal comment
+    Combo, //When a single user posts comments in a row, all of the comments except the first one are "combo".
+    Like,  //heart
     Present, //spoon, buster
-    Guide,   //`配信終了10分前だよ！` etc.
+    Guide, //`配信終了10分前だよ！` etc.
     Unknown,
 }
 
