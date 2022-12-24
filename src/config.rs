@@ -28,6 +28,7 @@ pub struct Spoon {
     pub should_comment_heart: bool,
     pub should_comment_spoon: bool,
     pub should_comment_guide: bool,
+    pub message_tunnel_file: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -60,6 +61,10 @@ impl Config {
         ret.chatgpt.project_dir = ret
             .chatgpt
             .project_dir
+            .replace('~', &std::env::var("HOME").unwrap());
+        ret.spoon.message_tunnel_file = ret
+            .spoon
+            .message_tunnel_file
             .replace('~', &std::env::var("HOME").unwrap());
         ret
     }

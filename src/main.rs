@@ -66,6 +66,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 continue;
             }
         }
+
+        if let Err(e) = spoon.process_message_tunnel(&config) {
+            println!("{}", e);
+            continue;
+        }
     }
 
     Ok(())

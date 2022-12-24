@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::error::Error;
+use std::path::Path;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -382,6 +384,22 @@ impl Spoon {
 
         self.previous_listeners_set = listeners_set;
 
+        Ok(())
+    }
+
+    //Sometimes you may want to manually post an arbitrary comment.
+    //At that time, you can write any string to the file whose path is specified via `config.spoon.message_tunnel_file`,
+    // and this function reads it and posts the content as a comment, removing the file after that.
+    pub fn process_message_tunnel(&self, config: &Config) -> Result<(), Box<dyn Error>> {
+        let p = Path::new(&config.spoon.message_tunnel_file);
+        if (!p.is_file()) {
+            return Ok(());
+        }
+        let s = std::fs::read_to_string(p)?.trim().to_string();
+        std::fs::remove_file(p)?;
+        if (!s.is_empty()) {
+            self.post_comment(&s)?;
+        }
         Ok(())
     }
 }

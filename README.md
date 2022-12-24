@@ -67,7 +67,8 @@ $ cp ./config_template.json ./config.json
         "should_comment_listener": true,
         "should_comment_heart": true,
         "should_comment_spoon": true,
-        "should_comment_guide": true
+        "should_comment_guide": true,
+        "message_tunnel_file": "~/ramdisk/tunnel.txt"
     },
     "selenium": {
         "webdriver_port": 4444,
