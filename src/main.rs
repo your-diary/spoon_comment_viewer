@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             config.spoon.comment_check_interval_ms,
         ));
 
-        match spoon.process_comment(&config) {
+        match spoon.process_comments(&config) {
             Err(e) => {
                 println!("{}", e);
                 continue;

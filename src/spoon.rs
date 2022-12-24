@@ -4,6 +4,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use chrono::Local;
+use itertools::Itertools;
 use regex::Regex;
 use thirtyfour_sync::error::WebDriverError;
 use thirtyfour_sync::ElementId;
@@ -19,11 +20,11 @@ use super::util;
 
 pub struct Spoon {
     chatgpt: ChatGPT,
-    z: Selenium, //TODO: rename to `driver`
+    z: Selenium,
 
     //comments
     comment_set: HashSet<ElementId>, //records existing comments
-    previous_author: String,         //for combo comment
+    previous_commenter: String,      //for combo comment
 
     //listeners
     is_listener_initialized: bool,
@@ -46,13 +47,26 @@ impl Spoon {
             z,
 
             comment_set: HashSet::new(),
-            previous_author: String::new(),
+            previous_commenter: String::new(),
 
             is_listener_initialized: false,
             previous_listeners_set: HashSet::new(),
             previous_listeners_map: HashMap::new(),
             cumulative_listeners: HashSet::new(),
         }
+    }
+
+    fn log(color: &str, s: &str, timestamp: &str) {
+        println!(
+            "{}[{} ({})]{}{} {}{}",
+            constant::COLOR_BLACK,
+            Local::now().format("%H:%M:%S"),
+            timestamp,
+            constant::NO_COLOR,
+            color,
+            s,
+            constant::NO_COLOR,
+        );
     }
 
     pub fn login(
@@ -93,7 +107,7 @@ impl Spoon {
         Ok(())
     }
 
-    pub fn process_comment(&mut self, config: &Config) -> Result<(), WebDriverError> {
+    pub fn process_comments(&mut self, config: &Config) -> Result<(), WebDriverError> {
         let timestamp = self.get_timestamp()?;
 
         let l = self.z.query_all("li.chat-list-item")?;
@@ -126,29 +140,50 @@ impl Spoon {
 
             match CommentType::new(class_name) {
                 CommentType::Message => {
-                    let tokens: Vec<&str> = inner_text.splitn(2, "\n").collect();
+                    let tokens = inner_text.splitn(2, "\n").collect_vec();
                     if (tokens.len() != 2) {
                         println!("Comment [ {} ] has an unexpected form.", inner_text);
                         continue;
                     }
-                    let message = Comment::new(tokens[0].to_string(), tokens[1].to_string());
-                    Self::print("", &message.to_string(), &timestamp);
-                    if (message.user() != config.chatgpt.excluded_user) {
-                        if let Some(s) = self.chatgpt.complete_and_say(message.text()) {
-                            self.post_comment(s.trim())?;
+
+                    let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
+                    Self::log("", &comment.to_string(), &timestamp);
+
+                    //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
+                    //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
+                    if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
+                    {
+                        if let Some(s) = self.chatgpt.complete_and_say(comment.text()) {
+                            //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
+                            for mut s in s.trim().chars().chunks(100).into_iter() {
+                                self.post_comment(&s.join(""))?;
+                            }
                         }
                     }
-                    self.previous_author = String::from(message.user());
+
+                    self.previous_commenter = String::from(comment.user());
                 }
 
                 CommentType::Combo => {
-                    let comment = Comment::new(self.previous_author.clone(), inner_text);
-                    Self::print("", &comment.to_string(), &timestamp);
+                    let comment = Comment::new(self.previous_commenter.clone(), inner_text);
+                    Self::log("", &comment.to_string(), &timestamp);
+
+                    //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
+                    //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
+                    if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
+                    {
+                        if let Some(s) = self.chatgpt.complete_and_say(comment.text()) {
+                            //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
+                            for mut s in s.trim().chars().chunks(100).into_iter() {
+                                self.post_comment(&s.join(""))?;
+                            }
+                        }
+                    }
                 }
 
                 CommentType::Guide => {
                     let c = format!("{}", inner_text.replace("分前だよ！", "分前だよ"));
-                    Self::print(constant::COLOR_WHITE, &c, &timestamp);
+                    Self::log(constant::COLOR_WHITE, &c, &timestamp);
                     if (inner_text.contains("分前だよ")) {
                         if (config.spoon.should_comment_guide) {
                             self.post_comment(&c)?;
@@ -161,7 +196,7 @@ impl Spoon {
                         "{}さん、ハートありがとう。",
                         inner_text.replace("さんがハートを押したよ！", "")
                     );
-                    Self::print(constant::COLOR_YELLOW, &c, &timestamp);
+                    Self::log(constant::COLOR_YELLOW, &c, &timestamp);
                     if (config.spoon.should_comment_heart) {
                         self.post_comment(&c)?;
                     }
@@ -179,7 +214,7 @@ impl Spoon {
 
                             //buster
                             if (groups.get(2).unwrap().as_str().starts_with("ハート")) {
-                                Self::print(
+                                Self::log(
                                     "",
                                     &format!(
                                         "{}{}:{} {}",
@@ -200,7 +235,7 @@ impl Spoon {
 
                             //spoon
                             } else {
-                                Self::print(
+                                Self::log(
                                     "",
                                     &format!(
                                         "{}{}:{} {}",
@@ -297,7 +332,7 @@ impl Spoon {
                         self.previous_listeners_map.get(&e).unwrap().elapsed()
                     ),
                 );
-                Self::print(constant::COLOR_GREEN, &c, &timestamp);
+                Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                 }
@@ -305,7 +340,7 @@ impl Spoon {
             } else {
                 //unexpected to happen
                 let c = format!("{}さん、また来てね。", e);
-                Self::print(constant::COLOR_GREEN, &c, &timestamp);
+                Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                 }
@@ -317,7 +352,7 @@ impl Spoon {
                 .insert(e.clone(), Instant::now());
             if (self.cumulative_listeners.contains(&e)) {
                 let c = format!("{}さん、おかえりなさい。", e);
-                Self::print(constant::COLOR_GREEN, &c, &timestamp);
+                Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                 }
@@ -327,7 +362,7 @@ impl Spoon {
                     self.is_listener_initialized = true;
                 } else {
                     let c = format!("{}さん、いらっしゃい。", e);
-                    Self::print(constant::COLOR_GREEN, &c, &timestamp);
+                    Self::log(constant::COLOR_GREEN, &c, &timestamp);
                     if (config.spoon.should_comment_listener) {
                         self.post_comment(&c)?;
                     }
@@ -338,18 +373,5 @@ impl Spoon {
         self.previous_listeners_set = listeners_set;
 
         Ok(())
-    }
-
-    fn print(color: &str, s: &str, timestamp: &str) {
-        println!(
-            "{}[{} ({})]{}{} {}{}",
-            constant::COLOR_BLACK,
-            Local::now().format("%H:%M:%S"),
-            timestamp,
-            constant::NO_COLOR,
-            color,
-            s,
-            constant::NO_COLOR,
-        );
     }
 }
