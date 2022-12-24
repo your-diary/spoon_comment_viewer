@@ -154,7 +154,11 @@ impl Spoon {
                     //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
-                        if let Some(s) = self.chatgpt.complete_and_say(comment.text()) {
+                        //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
+                        if let Some(s) = self
+                            .chatgpt
+                            .complete_and_say(&comment.text().split_whitespace().join(" "))
+                        {
                             //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
                             for mut s in s.trim().chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
@@ -173,7 +177,11 @@ impl Spoon {
                     //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
-                        if let Some(s) = self.chatgpt.complete_and_say(comment.text()) {
+                        //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
+                        if let Some(s) = self
+                            .chatgpt
+                            .complete_and_say(&comment.text().split_whitespace().join(" "))
+                        {
                             //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
                             for mut s in s.trim().chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
@@ -185,10 +193,8 @@ impl Spoon {
                 CommentType::Guide => {
                     let c = inner_text.replace("分前だよ！", "分前だよ");
                     Self::log(constant::COLOR_WHITE, &c, &timestamp);
-                    if (inner_text.contains("分前だよ")) {
-                        if (config.spoon.should_comment_guide) {
-                            self.post_comment(&c)?;
-                        }
+                    if (inner_text.contains("分前だよ") && config.spoon.should_comment_guide) {
+                        self.post_comment(&c)?;
                     }
                 }
 
