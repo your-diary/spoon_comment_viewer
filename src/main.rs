@@ -27,11 +27,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut chatgpt = ChatGPT::new(&config);
 
     let z = Selenium::new(
-        config.webdriver_port(),
-        Duration::from_millis(config.implicit_timeout_ms()),
+        config.selenium.webdriver_port,
+        Duration::from_millis(config.selenium.implicit_timeout_ms),
     );
 
-    spoon_comment_viewer::login(&z, config.twitter_id(), config.twitter_password())?;
+    spoon_comment_viewer::login(&z, &config.twitter.id, &config.twitter.password)?;
 
     {
         print!("Press ENTER to continue: ");
@@ -68,7 +68,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
 
-        thread::sleep(Duration::from_millis(config.comment_check_interval_ms()));
+        thread::sleep(Duration::from_millis(
+            config.spoon.comment_check_interval_ms,
+        ));
 
         let timestamp = match z.inner_text(".time-chip-container span") {
             Err(e) => {
@@ -94,7 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
-        if ((c as usize) % config.listener_check_interval_ratio() == 0) {
+        if ((c as usize) % config.spoon.listener_check_interval_ratio == 0) {
             match spoon_comment_viewer::process_listeners(
                 &z,
                 &config,

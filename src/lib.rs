@@ -105,7 +105,7 @@ pub fn process_comment(
                 }
                 let message = Comment::new(tokens[0].to_string(), tokens[1].to_string());
                 print("", &message.to_string(), timestamp);
-                if (message.user() != config.chatgpt_excluded_user()) {
+                if (message.user() != config.chatgpt.excluded_user) {
                     if let Some(s) = chatgpt.complete_and_say(message.text()) {
                         comment(&z, s.trim())?;
                     }
@@ -122,7 +122,7 @@ pub fn process_comment(
                 let c = format!("{}", inner_text.replace("分前だよ！", "分前だよ"));
                 print(constant::COLOR_WHITE, &c, timestamp);
                 if (inner_text.contains("分前だよ")) {
-                    if (config.should_comment_guide()) {
+                    if (config.spoon.should_comment_guide) {
                         comment(&z, &c)?;
                     }
                 }
@@ -134,7 +134,7 @@ pub fn process_comment(
                     inner_text.replace("さんがハートを押したよ！", "")
                 );
                 print(constant::COLOR_YELLOW, &c, timestamp);
-                if (config.should_comment_heart()) {
+                if (config.spoon.should_comment_heart) {
                     comment(&z, &c)?;
                 }
             }
@@ -163,7 +163,7 @@ pub fn process_comment(
                                 timestamp,
                             );
 
-                            if (config.should_comment_spoon()) {
+                            if (config.spoon.should_comment_spoon) {
                                 comment(
                                     &z,
                                     &format!(
@@ -187,7 +187,7 @@ pub fn process_comment(
                                 timestamp,
                             );
 
-                            if (config.should_comment_spoon()) {
+                            if (config.spoon.should_comment_spoon) {
                                 comment(
                                     &z,
                                     &format!(
@@ -287,13 +287,13 @@ pub fn process_listeners(
         let l = match z.query_all("button p.name.text-box") {
             Err(e) => {
                 z.driver().set_implicit_wait_timeout(Duration::from_millis(
-                    config.implicit_timeout_ms(),
+                    config.selenium.implicit_timeout_ms,
                 ))?;
                 return Err(e);
             }
             Ok(o) => {
                 z.driver().set_implicit_wait_timeout(Duration::from_millis(
-                    config.implicit_timeout_ms(),
+                    config.selenium.implicit_timeout_ms,
                 ))?;
                 o
             }
@@ -323,7 +323,7 @@ pub fn process_listeners(
                 pretty_print_duration(previous_listeners_map.get(&e).unwrap().elapsed()),
             );
             print(constant::COLOR_GREEN, &c, timestamp);
-            if (config.should_comment_listener()) {
+            if (config.spoon.should_comment_listener) {
                 comment(&z, &c)?;
             }
             previous_listeners_map.remove(&e);
@@ -331,7 +331,7 @@ pub fn process_listeners(
             //unexpected to happen
             let c = format!("{}さん、また来てね。", e);
             print(constant::COLOR_GREEN, &c, timestamp);
-            if (config.should_comment_listener()) {
+            if (config.spoon.should_comment_listener) {
                 comment(&z, &c)?;
             }
         }
@@ -342,7 +342,7 @@ pub fn process_listeners(
         if (cumulative_listeners.contains(&e)) {
             let c = format!("{}さん、おかえりなさい。", e);
             print(constant::COLOR_GREEN, &c, timestamp);
-            if (config.should_comment_listener()) {
+            if (config.spoon.should_comment_listener) {
                 comment(&z, &c)?;
             }
         } else {
@@ -350,7 +350,7 @@ pub fn process_listeners(
             if (!is_first_call) {
                 let c = format!("{}さん、いらっしゃい。", e);
                 print(constant::COLOR_GREEN, &c, timestamp);
-                if (config.should_comment_listener()) {
+                if (config.spoon.should_comment_listener) {
                     comment(&z, &c)?;
                 }
             }

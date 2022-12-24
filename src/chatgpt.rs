@@ -12,14 +12,14 @@ pub struct ChatGPT {
 
 impl ChatGPT {
     pub fn new(config: &Config) -> Self {
-        if (!config.chatgpt_enabled()) {
+        if (!config.chatgpt.enabled) {
             Self {
-                enabled: config.chatgpt_enabled(),
+                enabled: config.chatgpt.enabled,
                 stdin: None,
                 stdout: None,
             }
         } else {
-            env::set_current_dir(&config.chatgpt_project_dir()).unwrap();
+            env::set_current_dir(&config.chatgpt.project_dir).unwrap();
             let child = Command::new("cargo")
                 .args(["run"])
                 .stdin(Stdio::piped())
@@ -27,7 +27,7 @@ impl ChatGPT {
                 .spawn()
                 .unwrap();
             Self {
-                enabled: config.chatgpt_enabled(),
+                enabled: config.chatgpt.enabled,
                 stdin: Some(BufWriter::new(child.stdin.unwrap())),
                 stdout: Some(BufReader::new(child.stdout.unwrap())),
             }
