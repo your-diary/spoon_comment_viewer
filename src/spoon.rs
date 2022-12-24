@@ -139,6 +139,7 @@ impl Spoon {
             };
 
             match CommentType::new(class_name) {
+                //match arms {{{
                 CommentType::Message => {
                     let tokens = inner_text.splitn(2, "\n").collect_vec();
                     if (tokens.len() != 2) {
@@ -258,6 +259,7 @@ impl Spoon {
                     }
                 }
                 CommentType::Unknown => continue,
+                //}}}
             }
         }
 
@@ -279,6 +281,7 @@ impl Spoon {
         //
         //TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
         let listeners_set: HashSet<String> = {
+            //creates `listeners_set` {{{
             let mut listeners_list = Vec::new();
 
             //temporarily sets a small implicit wait value
@@ -318,6 +321,7 @@ impl Spoon {
             }
 
             HashSet::from_iter(listeners_list.into_iter())
+            //}}}
         };
 
         let exited_listeners = &self.previous_listeners_set - &listeners_set;
