@@ -35,7 +35,7 @@ pub struct Spoon {
 
 impl Spoon {
     pub fn new(config: &Config) -> Self {
-        let chatgpt = ChatGPT::new(&config);
+        let chatgpt = ChatGPT::new(config);
 
         let z = Selenium::new(
             config.selenium.webdriver_port,
@@ -141,7 +141,7 @@ impl Spoon {
             match CommentType::new(class_name) {
                 //match arms {{{
                 CommentType::Message => {
-                    let tokens = inner_text.splitn(2, "\n").collect_vec();
+                    let tokens = inner_text.splitn(2, '\n').collect_vec();
                     if (tokens.len() != 2) {
                         println!("Comment [ {} ] has an unexpected form.", inner_text);
                         continue;
@@ -183,7 +183,7 @@ impl Spoon {
                 }
 
                 CommentType::Guide => {
-                    let c = format!("{}", inner_text.replace("分前だよ！", "分前だよ"));
+                    let c = inner_text.replace("分前だよ！", "分前だよ");
                     Self::log(constant::COLOR_WHITE, &c, &timestamp);
                     if (inner_text.contains("分前だよ")) {
                         if (config.spoon.should_comment_guide) {

@@ -60,8 +60,7 @@ impl Config {
         ret.chatgpt.project_dir = ret
             .chatgpt
             .project_dir
-            .replace('~', &std::env::var("HOME").unwrap())
-            .to_string();
+            .replace('~', &std::env::var("HOME").unwrap());
         ret
     }
 }

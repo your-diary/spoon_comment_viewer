@@ -4,8 +4,6 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-use ctrlc;
-
 use spoon_comment_viewer::config::Config;
 use spoon_comment_viewer::spoon::Spoon;
 
@@ -56,22 +54,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             config.spoon.comment_check_interval_ms,
         ));
 
-        match spoon.process_comments(&config) {
-            Err(e) => {
-                println!("{}", e);
-                continue;
-            }
-            _ => (),
+        if let Err(e) = spoon.process_comments(&config) {
+            println!("{}", e);
+            continue;
         }
 
         //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
         if ((c as usize) % config.spoon.listener_check_interval_ratio == 0) {
-            match spoon.process_listeners(&config) {
-                Err(e) => {
-                    println!("{}", e);
-                    continue;
-                }
-                _ => (),
+            if let Err(e) = spoon.process_listeners(&config) {
+                println!("{}", e);
+                continue;
             }
         }
     }
