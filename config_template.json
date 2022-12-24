@@ -1,12 +1,24 @@
 {
-    "twitter_id": "example",
-    "twitter_password": "ejeew#!jfe35AB",
-    "comment_check_interval_ms": 1000,
-    "listener_check_interval_ratio": 2,
-    "should_comment_listener": false,
-    "should_comment_heart": false,
-    "should_comment_spoon": false,
-    "should_comment_guide": false,
-    "webdriver_port": 4444,
-    "implicit_timeout_ms": 5000
+    "twitter": {
+        "id": "example",
+        "password": "ejeew#!jfe35AB"
+    },
+    "spoon": {
+        "url": "https://www.spooncast.net/jp/",
+        "comment_check_interval_ms": 1000,
+        "listener_check_interval_ratio": 2,
+        "should_comment_listener": true,
+        "should_comment_heart": true,
+        "should_comment_spoon": true,
+        "should_comment_guide": true
+    },
+    "selenium": {
+        "webdriver_port": 4444,
+        "implicit_timeout_ms": 5000
+    },
+    "chatgpt": {
+        "enabled": false,
+        "project_dir": "~/Build/chatgpt",
+        "excluded_user": "DJりな"
+    }
 }
