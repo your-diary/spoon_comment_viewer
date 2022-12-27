@@ -87,7 +87,6 @@ impl Spoon {
         self.z.click("#allow")?;
 
         self.z.switch_tab(0)?;
-        std::thread::sleep(Duration::from_millis(500));
 
         Ok(())
     }
