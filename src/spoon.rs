@@ -8,6 +8,8 @@ use std::time::Instant;
 use chrono::Local;
 use itertools::Itertools;
 use regex::Regex;
+use reqwest::blocking::Client;
+use serde::{Deserialize, Serialize};
 use thirtyfour_sync::error::WebDriverError;
 use thirtyfour_sync::ElementId;
 use thirtyfour_sync::WebDriverCommands;
@@ -32,6 +34,10 @@ pub struct Spoon {
     previous_listeners_set: HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     previous_listeners_map: HashMap<String, Instant>, //for `xxx秒の滞在でした`
     cumulative_listeners: HashSet<String>,   //for `おかえりなさい`
+
+    //api call
+    http_client: Client,
+    live_id: String,
 }
 
 impl Spoon {
@@ -53,6 +59,12 @@ impl Spoon {
             previous_listeners_set: HashSet::new(),
             previous_listeners_map: HashMap::new(),
             cumulative_listeners: HashSet::new(),
+
+            http_client: Client::builder()
+                .timeout(Some(Duration::from_millis(3000)))
+                .build()
+                .unwrap(),
+            live_id: String::new(),
         }
     }
 
@@ -118,10 +130,22 @@ impl Spoon {
         Ok(())
     }
 
-    pub fn init(&self) {
-        //tries to open the listeners tab in the sidebar
-        //We intentionally ignore the result as this operation fails when the tab is already open.
-        let _ = self.z.click("button[title='リスナー']");
+    pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
+        if let serde_json::value::Value::Object(m) = self
+            .z
+            .driver()
+            .execute_script("window.localStorage.SPOONCAST_JP_liveCurrentInfo")?
+            .value()
+        {
+            if (m.keys().count() != 1) {
+                return Err("Failed to retrieve the live id.".into());
+            }
+            self.live_id = m.keys().next().cloned().unwrap();
+        } else {
+            return Err("Failed to retrieve the live id.".into());
+        }
+
+        Ok(())
     }
 
     fn get_timestamp(&self) -> Result<String, WebDriverError> {
@@ -307,54 +331,18 @@ impl Spoon {
 
         //retrieves the list of the names of current listeners
         //
-        //We can instead GET `https://jp-api.spooncast.net/lives/<live_id>/listeners/` to retrieve
-        // the list of listeners where `<live_id>` can be extracted from `SPOONCAST_JP_liveCurrentInfo`
-        // in local storage.
-        //It is of the form `{"30538814":{"uId":"l63m46d6","created":"2022-07-27T11:30:12.193915Z"}}`.
-        //
         //TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
         let listeners_set: HashSet<String> = {
-            //creates `listeners_set` {{{
-            let mut listeners_list = Vec::new();
-
-            //temporarily sets a small implicit wait value
-            //Without this, we end up waiting long for `query_all()` to return when there is no listener.
-            self.z
-                .driver()
-                .set_implicit_wait_timeout(Duration::from_millis(100))?;
-
-            //`未ログインユーザー<n>人` is not included as it's not a button.
-            let l = match self.z.query_all("button p.name.text-box") {
-                Err(e) => {
-                    self.z
-                        .driver()
-                        .set_implicit_wait_timeout(Duration::from_millis(
-                            config.selenium.implicit_timeout_ms,
-                        ))?;
-                    return Err(e);
-                }
-                Ok(o) => {
-                    self.z
-                        .driver()
-                        .set_implicit_wait_timeout(Duration::from_millis(
-                            config.selenium.implicit_timeout_ms,
-                        ))?;
-                    o
-                }
-            };
-
-            for e in l {
-                match e.text() {
-                    Err(e) => {
-                        println!("{}", e);
-                        continue;
-                    }
-                    Ok(s) => listeners_list.push(s),
-                }
-            }
-
-            HashSet::from_iter(listeners_list.into_iter())
-            //}}}
+            let res = self
+                .http_client
+                .get(format!(
+                    "https://jp-api.spooncast.net/lives/{}/listeners/",
+                    self.live_id
+                ))
+                .send()?
+                .text()?;
+            let listeners: Listeners = serde_json::from_str(&res)?;
+            listeners.results.into_iter().map(|e| e.nickname).collect()
         };
 
         let exited_listeners = &self.previous_listeners_set - &listeners_set;
@@ -423,4 +411,13 @@ impl Spoon {
         }
         Ok(())
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Listeners {
+    results: Vec<Listener>,
+}
+#[derive(Debug, Default, Deserialize, Serialize)]
+struct Listener {
+    nickname: String,
 }

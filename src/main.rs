@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    spoon.init();
+    spoon.init()?;
 
     let start = Instant::now();
     let mut c = -1isize;
