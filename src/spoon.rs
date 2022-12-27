@@ -101,6 +101,14 @@ impl Spoon {
 
         self.z.click(&format!("button[title='{}']", live.genre))?;
         self.z.input("input[name='title']", &live.title)?;
+        if (!live.tags.is_empty()) {
+            self.z.click("button.btn-tag")?;
+            let tags = self.z.query_all("div.input-tag-wrap input.input-tag")?;
+            for (i, tag) in tags.iter().enumerate().take(live.tags.len()) {
+                tag.send_keys(&live.tags[i])?;
+            }
+            self.z.click("button[title='確認']")?;
+        }
         self.z
             .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
 

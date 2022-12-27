@@ -74,6 +74,9 @@ $ cp ./config_template.json ./config.json
             "start_url": "https://www.spooncast.net/jp/live/broadcast",
             "genre": "勉強",
             "title": "一緒に勉強しよう!!",
+            "tags": [
+                "勉強"
+            ],
             "pinned_comment": "hello\nworld"
         }
     },

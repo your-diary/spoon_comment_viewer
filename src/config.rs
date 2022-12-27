@@ -38,6 +38,7 @@ pub struct Live {
     pub start_url: String,
     pub genre: String,
     pub title: String,
+    pub tags: Vec<String>,
     pub pinned_comment: String,
 }
 
@@ -76,6 +77,7 @@ impl Config {
             .spoon
             .message_tunnel_file
             .replace('~', &std::env::var("HOME").unwrap());
+        assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }
 }
