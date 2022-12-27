@@ -97,6 +97,7 @@ impl Spoon {
             return Ok(());
         }
 
+        std::thread::sleep(Duration::from_millis(3000));
         self.z.driver().get(&live.start_url)?;
 
         self.z.click(&format!("button[title='{}']", live.genre))?;
