@@ -126,6 +126,7 @@ impl Spoon {
             .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
 
         self.z.click("button.btn-create")?;
+        std::thread::sleep(Duration::from_millis(3000));
 
         Ok(())
     }
