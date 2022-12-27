@@ -326,9 +326,6 @@ impl Spoon {
     pub fn process_listeners(&mut self, config: &Config) -> Result<(), WebDriverError> {
         let timestamp = self.get_timestamp()?;
 
-        self.z
-            .click("div.user-list-wrap button[title='再読み込み']")?;
-
         //retrieves the list of the names of current listeners
         //
         //TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
