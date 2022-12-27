@@ -29,6 +29,16 @@ pub struct Spoon {
     pub should_comment_spoon: bool,
     pub should_comment_guide: bool,
     pub message_tunnel_file: String,
+    pub live: Live,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Live {
+    pub enabled: bool,
+    pub start_url: String,
+    pub genre: String,
+    pub title: String,
+    pub pinned_comment: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]

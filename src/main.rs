@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io::{self, Write};
 use std::sync::mpsc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use spoon_comment_viewer::config::Config;
 use spoon_comment_viewer::spoon::Spoon;
@@ -26,7 +26,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         &config.twitter.password,
     )?;
 
-    {
+    //automatically starts a live
+    if (config.spoon.live.enabled) {
+        spoon.start_live(&config)?;
+    //manually starts a live
+    } else {
         print!("Press ENTER after you have started a live: ");
         io::stdout().flush().unwrap();
         let mut buf = String::new();
@@ -42,11 +46,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     spoon.init();
 
+    let start = Instant::now();
     let mut c = -1isize;
     loop {
         c += 1;
 
-        if (rx.try_recv().is_ok()) {
+        if ((start.elapsed().as_secs() > 3600 * 2 + 5) || rx.try_recv().is_ok()) {
             break;
         }
 

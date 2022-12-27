@@ -93,6 +93,24 @@ impl Spoon {
         Ok(())
     }
 
+    pub fn start_live(&mut self, config: &Config) -> Result<(), WebDriverError> {
+        let live = &config.spoon.live;
+        if (!live.enabled) {
+            return Ok(());
+        }
+
+        self.z.driver().get(&live.start_url)?;
+
+        self.z.click(&format!("button[title='{}']", live.genre))?;
+        self.z.input("input[name='title']", &live.title)?;
+        self.z
+            .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
+
+        self.z.click("button.btn_create")?;
+
+        Ok(())
+    }
+
     pub fn init(&self) {
         //tries to open the listeners tab in the sidebar
         //We intentionally ignore the result as this operation fails when the tab is already open.
