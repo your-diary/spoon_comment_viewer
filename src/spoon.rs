@@ -125,7 +125,7 @@ impl Spoon {
         self.z
             .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
 
-        self.z.click("button.btn_create")?;
+        self.z.click("button.btn-create")?;
 
         Ok(())
     }
