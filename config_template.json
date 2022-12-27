@@ -11,7 +11,14 @@
         "should_comment_heart": true,
         "should_comment_spoon": true,
         "should_comment_guide": true,
-        "message_tunnel_file": "~/ramdisk/tunnel.txt"
+        "message_tunnel_file": "~/ramdisk/tunnel.txt",
+        "live": {
+            "enabled": false,
+            "start_url": "https://www.spooncast.net/jp/live/broadcast",
+            "genre": "勉強",
+            "title": "一緒に勉強しよう!!",
+            "pinned_comment": "hello\nworld"
+        }
     },
     "selenium": {
         "webdriver_port": 4444,
