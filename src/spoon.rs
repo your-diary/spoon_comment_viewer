@@ -37,7 +37,7 @@ pub struct Spoon {
 
     //api call
     http_client: Client,
-    live_id: String,
+    live_id: u64,
 }
 
 impl Spoon {
@@ -64,7 +64,7 @@ impl Spoon {
                 .timeout(Some(Duration::from_millis(3000)))
                 .build()
                 .unwrap(),
-            live_id: String::new(),
+            live_id: 0,
         }
     }
 
@@ -131,16 +131,18 @@ impl Spoon {
     }
 
     pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
-        if let serde_json::value::Value::Object(m) = self
+        if let serde_json::value::Value::Number(n) = self
             .z
             .driver()
-            .execute_script("window.localStorage.SPOONCAST_JP_liveCurrentInfo")?
+            .execute_script(
+                "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
+            )?
             .value()
         {
-            if (m.keys().count() != 1) {
-                return Err("Failed to retrieve the live id.".into());
+            match n.as_u64() {
+                Some(id) => self.live_id = id,
+                None => return Err("Failed to parse the live id as number.".into()),
             }
-            self.live_id = m.keys().next().cloned().unwrap();
         } else {
             return Err("Failed to retrieve the live id.".into());
         }
