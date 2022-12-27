@@ -19,6 +19,14 @@ impl Selenium {
             )
             .unwrap();
 
+        //allows microphone access
+        firefox
+            .add_firefox_option(
+                "prefs",
+                serde_json::json!({"permissions.default.microphone": 1}),
+            )
+            .unwrap();
+
         let driver = match WebDriver::new(
             format!("http://localhost:{}", webdriver_port).as_str(),
             &firefox,
