@@ -29,7 +29,6 @@ pub struct Spoon {
     previous_commenter: String,      //for combo comment
 
     //listeners
-    is_listener_initialized: bool,
     previous_listeners_set: HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     previous_listeners_map: HashMap<String, Instant>, //for `xxx秒の滞在でした`
     cumulative_listeners: HashSet<String>,   //for `おかえりなさい`
@@ -51,7 +50,6 @@ impl Spoon {
             comment_set: HashSet::new(),
             previous_commenter: String::new(),
 
-            is_listener_initialized: false,
             previous_listeners_set: HashSet::new(),
             previous_listeners_map: HashMap::new(),
             cumulative_listeners: HashSet::new(),
@@ -388,14 +386,10 @@ impl Spoon {
                 }
             } else {
                 self.cumulative_listeners.insert(e.clone());
-                if (!self.is_listener_initialized) {
-                    self.is_listener_initialized = true;
-                } else {
-                    let c = format!("{}さん、いらっしゃい。", e);
-                    Self::log(constant::COLOR_GREEN, &c, &timestamp);
-                    if (config.spoon.should_comment_listener) {
-                        self.post_comment(&c)?;
-                    }
+                let c = format!("{}さん、いらっしゃい。", e);
+                Self::log(constant::COLOR_GREEN, &c, &timestamp);
+                if (config.spoon.should_comment_listener) {
+                    self.post_comment(&c)?;
                 }
             }
         }
