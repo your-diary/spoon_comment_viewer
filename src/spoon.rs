@@ -247,7 +247,10 @@ impl Spoon {
                 CommentType::Guide => {
                     let c = inner_text.replace("分前だよ！", "分前だよ");
                     Self::log(constant::COLOR_WHITE, &c, &timestamp);
-                    if (inner_text.contains("分前だよ") && config.spoon.should_comment_guide) {
+                    if (inner_text.contains("10分前だよ")
+                        && inner_text.contains("1分前だよ")
+                        && config.spoon.should_comment_guide)
+                    {
                         self.post_comment(&c)?;
                     }
                 }
