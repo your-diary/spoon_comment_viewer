@@ -112,8 +112,13 @@ impl Spoon {
         std::thread::sleep(Duration::from_millis(3000));
         self.z.driver().get(&live.start_url)?;
 
+        //genre
         self.z.click(&format!("button[title='{}']", live.genre))?;
+
+        //title
         self.z.input("input[name='title']", &live.title)?;
+
+        //tags
         if (!live.tags.is_empty()) {
             self.z.click("button.btn-tag")?;
             let tags = self.z.query_all("div.input-tag-wrap input.input-tag")?;
@@ -122,8 +127,18 @@ impl Spoon {
             }
             self.z.click("button[title='確認']")?;
         }
+
+        //pinned message
         self.z
             .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
+
+        //background image
+        if (!config.spoon.live.bg_image.is_empty()) {
+            self.z.input(
+                "input.input-file",
+                std::fs::read_to_string(&config.spoon.live.bg_image)?.trim(),
+            )?
+        }
 
         self.z.click("button.btn-create")?;
         std::thread::sleep(Duration::from_millis(3000));
