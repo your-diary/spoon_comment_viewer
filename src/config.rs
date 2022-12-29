@@ -5,6 +5,8 @@ use std::{
     io::{BufRead, BufReader},
 };
 
+use super::util;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub twitter: Twitter,
@@ -40,6 +42,7 @@ pub struct Live {
     pub title: String,
     pub tags: Vec<String>,
     pub pinned_comment: String,
+    pub bg_image: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -69,14 +72,9 @@ impl Config {
         };
 
         let mut ret: Self = serde_json::from_str(&json_string).unwrap();
-        ret.chatgpt.project_dir = ret
-            .chatgpt
-            .project_dir
-            .replace('~', &std::env::var("HOME").unwrap());
-        ret.spoon.message_tunnel_file = ret
-            .spoon
-            .message_tunnel_file
-            .replace('~', &std::env::var("HOME").unwrap());
+        ret.chatgpt.project_dir = util::tilde_expansion(&ret.chatgpt.project_dir);
+        ret.spoon.message_tunnel_file = util::tilde_expansion(&ret.spoon.message_tunnel_file);
+        ret.spoon.live.bg_image = util::tilde_expansion(&ret.spoon.live.bg_image);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }

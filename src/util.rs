@@ -1,5 +1,9 @@
 use std::time::Duration;
 
+pub fn tilde_expansion(s: &str) -> String {
+    s.replace('~', &std::env::var("HOME").unwrap())
+}
+
 pub fn pretty_print_duration(d: Duration) -> String {
     let s = d.as_secs();
     if (s <= 60) {
