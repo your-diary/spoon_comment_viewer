@@ -4,7 +4,7 @@
 
 以下のような機能を持つ。
 
-- コメントビューア機能
+- コメントビューア
 
 - チャットボット (自動マネージャー)
 
@@ -18,6 +18,8 @@
 
     - スプーンやバスターのお礼 (「スプーンありがとう」)
 
+- 連続配信 (設定した内容の枠を次枠として作り続ける)
+
 - 人工知能による自動配信 (ChatGPTやCoeFontとの連携によるコメントへの自動応答)
 
 - CUI
@@ -30,7 +32,7 @@
 
 | [![](./readme_assets/demo.png)](https://www.youtube.com/watch?v=mWLUacHuatY) |
 | :-: |
-| Demo (YouTube) |
+| デモ動画 (YouTube) |
 
 # 2. 使い方
 
@@ -77,12 +79,14 @@ $ cp ./config_template.json ./config.json
             "tags": [
                 "勉強"
             ],
-            "pinned_comment": "hello\nworld"
+            "pinned_comment": "hello\nworld",
+            "bg_image": "~/Downloads/bg.png"
         }
     },
     "selenium": {
         "webdriver_port": 4444,
-        "implicit_timeout_ms": 5000
+        "implicit_timeout_ms": 5000,
+        "should_maximize_window": false
     },
     "chatgpt": {
         "enabled": false,

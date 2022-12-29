@@ -20,12 +20,14 @@
             "tags": [
                 "勉強"
             ],
-            "pinned_comment": "hello\nworld"
+            "pinned_comment": "hello\nworld",
+            "bg_image": "~/Downloads/bg.png"
         }
     },
     "selenium": {
         "webdriver_port": 4444,
-        "implicit_timeout_ms": 5000
+        "implicit_timeout_ms": 5000,
+        "should_maximize_window": false
     },
     "chatgpt": {
         "enabled": false,
