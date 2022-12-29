@@ -103,7 +103,7 @@ impl Spoon {
         Ok(())
     }
 
-    pub fn start_live(&mut self, config: &Config) -> Result<(), WebDriverError> {
+    pub fn start_live(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
         let live = &config.spoon.live;
         if (!live.enabled) {
             return Ok(());
@@ -133,11 +133,15 @@ impl Spoon {
             .input("textarea[name='welcomeMessage']", &live.pinned_comment)?;
 
         //background image
+        //|https://stackoverflow.com/questions/11256732/how-to-handle-windows-file-upload-using-selenium-webdriver|
         if (!config.spoon.live.bg_image.is_empty()) {
-            self.z.input(
-                "input.input-file",
-                std::fs::read_to_string(&config.spoon.live.bg_image)?.trim(),
-            )?
+            if (!Path::new(&config.spoon.live.bg_image).is_file()) {
+                return Err(
+                    format!("bg image [ {} ] not found", config.spoon.live.bg_image).into(),
+                );
+            }
+            self.z
+                .input("input.input-file", &config.spoon.live.bg_image)?
         }
 
         self.z.click("button.btn-create")?;
