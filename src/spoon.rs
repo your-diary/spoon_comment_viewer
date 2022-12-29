@@ -47,6 +47,7 @@ impl Spoon {
         let z = Selenium::new(
             config.selenium.webdriver_port,
             Duration::from_millis(config.selenium.implicit_timeout_ms),
+            config.selenium.should_maximize_window,
         );
 
         Self {

@@ -49,6 +49,7 @@ pub struct Live {
 pub struct Selenium {
     pub webdriver_port: usize,
     pub implicit_timeout_ms: u64,
+    pub should_maximize_window: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]

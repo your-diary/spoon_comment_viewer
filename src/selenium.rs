@@ -8,7 +8,11 @@ pub struct Selenium {
 }
 
 impl Selenium {
-    pub fn new(webdriver_port: usize, implicit_timeout: Duration) -> Self {
+    pub fn new(
+        webdriver_port: usize,
+        implicit_timeout: Duration,
+        should_maximize_window: bool,
+    ) -> Self {
         let mut firefox = DesiredCapabilities::firefox();
 
         //disables desktop notification
@@ -38,6 +42,9 @@ impl Selenium {
             }
         };
         driver.set_implicit_wait_timeout(implicit_timeout).unwrap();
+        if (should_maximize_window) {
+            driver.maximize_window().unwrap();
+        }
 
         Selenium { driver }
     }
