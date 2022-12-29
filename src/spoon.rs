@@ -281,7 +281,8 @@ impl Spoon {
                 }
 
                 CommentType::Present => {
-                    let pat = Regex::new(r#"^([^\n]*)\n+(.*Spoon.*|ハート.*)$"#).unwrap();
+                    let pat = Regex::new(r#"^([^\n]*)\n+(.*Spoon.*|ハート.*|心ばかりの粗品.*)$"#)
+                        .unwrap();
                     match pat.captures(&inner_text) {
                         None => (),
                         Some(groups) => {
@@ -307,6 +308,32 @@ impl Spoon {
                                 if (config.spoon.should_comment_spoon) {
                                     self.post_comment(&format!(
                                         "{}さん、バスターありがとう。",
+                                        groups.get(1).unwrap().as_str(),
+                                    ))?;
+                                }
+
+                            //心ばかりの粗品
+                            } else if (groups
+                                .get(2)
+                                .unwrap()
+                                .as_str()
+                                .starts_with("心ばかりの粗品"))
+                            {
+                                Self::log(
+                                    "",
+                                    &format!(
+                                        "{}{}:{} {}",
+                                        constant::COLOR_RED,
+                                        groups.get(1).unwrap().as_str(),
+                                        constant::NO_COLOR,
+                                        groups.get(2).unwrap().as_str(),
+                                    ),
+                                    &timestamp,
+                                );
+
+                                if (config.spoon.should_comment_spoon) {
+                                    self.post_comment(&format!(
+                                        "{}さん、粗品ありがとう。",
                                         groups.get(1).unwrap().as_str(),
                                     ))?;
                                 }
