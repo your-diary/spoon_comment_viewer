@@ -62,6 +62,15 @@ impl Selenium {
         self.query(css_selector).and_then(|e| e.send_keys(s))
     }
 
+    //synchronously calls JavaScript
+    //Note the script `script` shall contain a `return` statement to return the evaluated value.
+    pub fn execute_javascript(
+        &self,
+        script: &str,
+    ) -> Result<serde_json::value::Value, WebDriverError> {
+        Ok(self.driver.execute_script(script)?.value().clone())
+    }
+
     pub fn inner_text(&self, css_selector: &str) -> Result<String, WebDriverError> {
         self.query(css_selector).and_then(|e| e.text())
     }

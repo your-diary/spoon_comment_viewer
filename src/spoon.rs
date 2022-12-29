@@ -132,14 +132,9 @@ impl Spoon {
     }
 
     pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
-        if let serde_json::value::Value::Number(n) = self
-            .z
-            .driver()
-            .execute_script(
-                "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
-            )?
-            .value()
-        {
+        if let serde_json::value::Value::Number(n) = self.z.execute_javascript(
+            "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
+        )? {
             match n.as_u64() {
                 Some(id) => self.live_id = id,
                 None => return Err("Failed to parse the live id as number.".into()),
