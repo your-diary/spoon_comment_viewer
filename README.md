@@ -100,7 +100,17 @@ $ cp ./config_template.json ./config.json
 
 ## 2.3 実行
 
+### 2.3.1 通常の実行
+
 ```bash
 $ geckodriver
 $ cargo run --release
 ```
+
+### 2.3.2 連続配信
+
+```bash
+$ geckodriver
+$ ./loop.sh
+```
+
