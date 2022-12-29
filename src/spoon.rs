@@ -9,7 +9,6 @@ use chrono::Local;
 use itertools::Itertools;
 use regex::Regex;
 use reqwest::blocking::Client;
-use serde::{Deserialize, Serialize};
 use thirtyfour_sync::error::WebDriverError;
 use thirtyfour_sync::ElementId;
 use thirtyfour_sync::WebDriverCommands;
@@ -19,6 +18,7 @@ use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
+use super::listener;
 use super::selenium::Selenium;
 use super::util;
 
@@ -328,24 +328,14 @@ impl Spoon {
         Ok(())
     }
 
-    pub fn process_listeners(&mut self, config: &Config) -> Result<(), WebDriverError> {
+    pub fn process_listeners(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
         let timestamp = self.get_timestamp()?;
 
-        //retrieves the list of the names of current listeners
-        //
-        //TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
-        let listeners_set: HashSet<String> = {
-            let res = self
-                .http_client
-                .get(format!(
-                    "https://jp-api.spooncast.net/lives/{}/listeners/",
-                    self.live_id
-                ))
-                .send()?
-                .text()?;
-            let listeners: Listeners = serde_json::from_str(&res)?;
-            listeners.results.into_iter().map(|e| e.nickname).collect()
-        };
+        let listeners_set: HashSet<String> =
+            listener::retrieve_listeners(&self.http_client, self.live_id)?
+                .into_iter()
+                .map(|e| e.nickname)
+                .collect();
 
         let exited_listeners = &self.previous_listeners_set - &listeners_set;
         let new_listeners = &listeners_set - &self.previous_listeners_set;
@@ -413,13 +403,4 @@ impl Spoon {
         }
         Ok(())
     }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Listeners {
-    results: Vec<Listener>,
-}
-#[derive(Debug, Default, Deserialize, Serialize)]
-struct Listener {
-    nickname: String,
 }
