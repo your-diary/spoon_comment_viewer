@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 function f() {
-    echo
-    echo "--------------- $(date) ---------------"
     while true; do
+        echo
+        echo "--------------- $(date) ---------------"
         cargo run --release
         sleep 5
     done
