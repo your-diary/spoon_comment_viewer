@@ -12,6 +12,7 @@ pub struct Config {
     pub twitter: Twitter,
     pub spoon: Spoon,
     pub selenium: Selenium,
+    pub coefont: CoeFont,
     pub chatgpt: ChatGPT,
 }
 
@@ -53,6 +54,12 @@ pub struct Selenium {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
+pub struct CoeFont {
+    pub enabled: bool,
+    pub binary_path: String,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ChatGPT {
     pub enabled: bool,
     pub project_dir: String,
@@ -76,6 +83,7 @@ impl Config {
         ret.chatgpt.project_dir = util::tilde_expansion(&ret.chatgpt.project_dir);
         ret.spoon.message_tunnel_file = util::tilde_expansion(&ret.spoon.message_tunnel_file);
         ret.spoon.live.bg_image = util::tilde_expansion(&ret.spoon.live.bg_image);
+        ret.coefont.binary_path = util::tilde_expansion(&ret.coefont.binary_path);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }

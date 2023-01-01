@@ -29,6 +29,10 @@
         "implicit_timeout_ms": 5000,
         "should_maximize_window": false
     },
+    "coefont": {
+        "enabled": false,
+        "binary_path": "~/Build/coefontuber/coefontuber"
+    },
     "chatgpt": {
         "enabled": false,
         "project_dir": "~/Build/chatgpt",

@@ -34,7 +34,7 @@ impl ChatGPT {
         }
     }
 
-    pub fn complete_and_say(&mut self, prompt: &str) -> Option<String> {
+    pub fn complete(&mut self, prompt: &str) -> Option<String> {
         if (self.enabled) {
             self.stdin
                 .as_mut()

@@ -14,6 +14,7 @@ use thirtyfour_sync::ElementId;
 use thirtyfour_sync::WebDriverCommands;
 
 use super::chatgpt::ChatGPT;
+use super::coefont::CoeFont;
 use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
@@ -24,6 +25,7 @@ use super::util;
 
 pub struct Spoon {
     chatgpt: ChatGPT,
+    coefont: CoeFont,
     z: Selenium,
 
     //comments
@@ -43,6 +45,7 @@ pub struct Spoon {
 impl Spoon {
     pub fn new(config: &Config) -> Self {
         let chatgpt = ChatGPT::new(config);
+        let coefont = CoeFont::new(config);
 
         let z = Selenium::new(
             config.selenium.webdriver_port,
@@ -52,6 +55,7 @@ impl Spoon {
 
         Self {
             chatgpt,
+            coefont,
             z,
 
             comment_set: HashSet::new(),
@@ -220,17 +224,21 @@ impl Spoon {
                     Self::log("", &comment.to_string(), &timestamp);
 
                     //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
-                    //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
+                    //      Refactoring this as a method was difficult since `self.chatgpt.complete()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
                         //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
                         if let Some(s) = self
                             .chatgpt
-                            .complete_and_say(&comment.text().split_whitespace().join(" "))
+                            .complete(&comment.text().split_whitespace().join(" "))
                         {
+                            let s = s.trim();
                             //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
-                            for mut s in s.trim().chars().chunks(100).into_iter() {
+                            for mut s in s.chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
+                            }
+                            if (config.coefont.enabled) {
+                                self.coefont.say(s);
                             }
                         }
                     }
@@ -243,17 +251,21 @@ impl Spoon {
                     Self::log("", &comment.to_string(), &timestamp);
 
                     //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
-                    //      Refactoring this as a method was difficult since `self.chatgpt.complete_and_say()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
+                    //      Refactoring this as a method was difficult since `self.chatgpt.complete()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
                         //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
                         if let Some(s) = self
                             .chatgpt
-                            .complete_and_say(&comment.text().split_whitespace().join(" "))
+                            .complete(&comment.text().split_whitespace().join(" "))
                         {
+                            let s = s.trim();
                             //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
-                            for mut s in s.trim().chars().chunks(100).into_iter() {
+                            for mut s in s.chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
+                            }
+                            if (config.coefont.enabled) {
+                                self.coefont.say(s);
                             }
                         }
                     }

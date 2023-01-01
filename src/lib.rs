@@ -1,4 +1,5 @@
 pub mod chatgpt;
+pub mod coefont;
 pub mod comment;
 pub mod config;
 pub mod constant;
