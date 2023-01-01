@@ -197,6 +197,24 @@ impl Spoon {
             c
         };
 
+        if (num_new_comment == 0) {
+            return Ok(());
+
+        //With a small enough check interval, it is unexpected `num_new_comment` has a large value.
+        //However, it sometimes happened for some reason: at that time, it seemed the already processed comments in the past were mistakenly treated as new comments.
+        //The cause is unknown but we suspect `element_id` may be reassigned by a bug of Spoon or Selenium.
+        } else if (num_new_comment >= 15) {
+            println!(
+                "The value of `num_new_comment` is too large: {}",
+                num_new_comment
+            );
+            println!(
+                "New comments: {:?}",
+                l.iter().skip(l.len() - num_new_comment).collect_vec()
+            );
+            return Ok(());
+        }
+
         for e in l.iter().skip(l.len() - num_new_comment) {
             let inner_text = match e.text() {
                 Ok(s) => s,
