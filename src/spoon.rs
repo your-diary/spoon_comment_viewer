@@ -324,12 +324,13 @@ impl Spoon {
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
-                                    let s = groups.get(1).unwrap().as_str();
-                                    self.post_comment(
-                                        &format!("{}さん、バスターありがとう。", s,),
-                                    )?;
+                                    let s = format!(
+                                        "{}さん、バスターありがとう。",
+                                        groups.get(1).unwrap().as_str()
+                                    );
+                                    self.post_comment(&s)?;
                                     if (config.coefont.enabled) {
-                                        self.coefont.say(s);
+                                        self.coefont.say(&s);
                                     }
                                 }
 
