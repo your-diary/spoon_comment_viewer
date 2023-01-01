@@ -18,6 +18,8 @@
 
     - スプーンやバスターのお礼 (「スプーンありがとう」)
 
+- 読み上げ機能 (CoeFontと連携してハーコメを読み上げるなど)
+
 - 連続配信 (設定した内容の枠を次枠として作り続ける)
 
 - 人工知能による自動配信 (ChatGPTやCoeFontとの連携によるコメントへの自動応答)
@@ -56,6 +58,8 @@ $ cp ./config_template.json ./config.json
 
 `twitter`オブジェクトには、SpoonにログインするためのTwitterのIDとパスワードを設定します。それ以外の設定はデフォルト値のままで大丈夫です。
 
+ハーコメの読み上げを有効にしたい場合は、`coefont.binary_path`として読み上げ用のバイナリのパスを設定してください。バイナリは最初に一度だけ起動され、それ以降は読み上げ用の文章が標準入力として渡され続けます。例えば[`coefontuber`](https://github.com/your-diary/coefontuber)を設定することが可能です。
+
 ```json
 {
     "twitter": {
@@ -87,6 +91,10 @@ $ cp ./config_template.json ./config.json
         "webdriver_port": 4444,
         "implicit_timeout_ms": 5000,
         "should_maximize_window": false
+    },
+    "coefont": {
+        "enabled": false,
+        "binary_path": "~/Build/coefontuber/coefontuber"
     },
     "chatgpt": {
         "enabled": false,
