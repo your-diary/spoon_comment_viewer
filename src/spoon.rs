@@ -278,6 +278,9 @@ impl Spoon {
                         && config.spoon.should_comment_guide)
                     {
                         self.post_comment(&c)?;
+                        if (config.coefont.enabled) {
+                            self.coefont.say(&c);
+                        }
                     }
                 }
 
@@ -289,6 +292,9 @@ impl Spoon {
                     Self::log(constant::COLOR_YELLOW, &c, &timestamp);
                     if (config.spoon.should_comment_heart) {
                         self.post_comment(&c)?;
+                        if (config.coefont.enabled) {
+                            self.coefont.say(&c);
+                        }
                     }
                 }
 
@@ -318,10 +324,13 @@ impl Spoon {
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
-                                    self.post_comment(&format!(
-                                        "{}さん、バスターありがとう。",
-                                        groups.get(1).unwrap().as_str(),
-                                    ))?;
+                                    let s = groups.get(1).unwrap().as_str();
+                                    self.post_comment(
+                                        &format!("{}さん、バスターありがとう。", s,),
+                                    )?;
+                                    if (config.coefont.enabled) {
+                                        self.coefont.say(s);
+                                    }
                                 }
 
                             //心ばかりの粗品
@@ -344,10 +353,14 @@ impl Spoon {
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
-                                    self.post_comment(&format!(
+                                    let s = format!(
                                         "{}さん、粗品ありがとう。",
                                         groups.get(1).unwrap().as_str(),
-                                    ))?;
+                                    );
+                                    self.post_comment(&s)?;
+                                    if (config.coefont.enabled) {
+                                        self.coefont.say(&s);
+                                    }
                                 }
 
                             //spoon
@@ -365,10 +378,14 @@ impl Spoon {
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
-                                    self.post_comment(&format!(
+                                    let s = format!(
                                         "{}さん、スプーンありがとう。",
                                         groups.get(1).unwrap().as_str(),
-                                    ))?;
+                                    );
+                                    self.post_comment(&s)?;
+                                    if (config.coefont.enabled) {
+                                        self.coefont.say(&s);
+                                    }
                                 }
                             }
                         }
@@ -396,16 +413,20 @@ impl Spoon {
 
         for e in exited_listeners {
             if (self.previous_listeners_map.contains_key(&e)) {
-                let c = format!(
-                    "{}さん、また来てね。(滞在時間: {})",
-                    e,
+                let c = format!("{}さん、また来てね。", e);
+                let c_with_time = format!(
+                    "{}(滞在時間: {})",
+                    c,
                     util::pretty_print_duration(
                         self.previous_listeners_map.get(&e).unwrap().elapsed()
-                    ),
+                    )
                 );
-                Self::log(constant::COLOR_GREEN, &c, &timestamp);
+                Self::log(constant::COLOR_GREEN, &c_with_time, &timestamp);
                 if (config.spoon.should_comment_listener) {
-                    self.post_comment(&c)?;
+                    self.post_comment(&c_with_time)?;
+                    if (config.coefont.enabled) {
+                        self.coefont.say(&c);
+                    }
                 }
                 self.previous_listeners_map.remove(&e);
             } else {
@@ -414,6 +435,9 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
+                    if (config.coefont.enabled) {
+                        self.coefont.say(&c);
+                    }
                 }
             }
         }
@@ -426,6 +450,9 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
+                    if (config.coefont.enabled) {
+                        self.coefont.say(&c);
+                    }
                 }
             } else {
                 self.cumulative_listeners.insert(e.clone());
@@ -433,6 +460,9 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
+                    if (config.coefont.enabled) {
+                        self.coefont.say(&c);
+                    }
                 }
             }
         }
@@ -445,7 +475,7 @@ impl Spoon {
     //Sometimes you may want to manually post an arbitrary comment.
     //At that time, you can write any string to the file whose path is specified via `config.spoon.message_tunnel_file`,
     // and this function reads it and posts the content as a comment, removing the file after that.
-    pub fn process_message_tunnel(&self, config: &Config) -> Result<(), Box<dyn Error>> {
+    pub fn process_message_tunnel(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
         let p = Path::new(&config.spoon.message_tunnel_file);
         if (!p.is_file()) {
             return Ok(());
@@ -454,6 +484,9 @@ impl Spoon {
         std::fs::remove_file(p)?;
         if (!s.is_empty()) {
             self.post_comment(&s)?;
+            if (config.coefont.enabled) {
+                self.coefont.say(&s);
+            }
         }
         Ok(())
     }
