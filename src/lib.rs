@@ -8,3 +8,4 @@ pub mod player;
 pub mod selenium;
 pub mod spoon;
 pub mod util;
+pub mod voicevox;

@@ -31,7 +31,15 @@ impl Player {
     //plays the specified audio asynchronically
     //This method returns right away.
     //Playing will stop when `Player.drop()` is called.
-    pub fn play(&mut self, audio: &Audio) {
+    pub fn play_async(&mut self, audio: &Audio) {
+        self.play(audio, true);
+    }
+
+    pub fn play_sync(&mut self, audio: &Audio) {
+        self.play(audio, false);
+    }
+
+    fn play(&mut self, audio: &Audio, is_async: bool) {
         let mut args = vec![format!("-v {}", audio.volume), audio.path.clone()];
         if (audio.should_reverb) {
             args.push("pad".to_string());
@@ -43,14 +51,21 @@ impl Player {
             args.push("repeat".to_string());
             args.push("-".to_string());
         }
-        if let Ok(c) = Command::new("play")
+        if let Ok(mut c) = Command::new("play")
             .args(args)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
         {
-            self.children.push(c);
+            if (is_async) {
+                self.children.push(c);
+            } else {
+                #[allow(clippy::collapsible_else_if)]
+                if let Err(e) = c.wait() {
+                    println!("Failed to play the audio: {}", e);
+                }
+            }
         }
     }
 }

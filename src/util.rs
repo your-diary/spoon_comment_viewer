@@ -1,11 +1,18 @@
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
-pub fn tilde_expansion(s: &str) -> String {
-    s.replace('~', &std::env::var("HOME").unwrap())
+//tilde expansion + makes it absolute path
+pub fn canonicalize_path(s: &str) -> String {
+    Path::new(&s.replace('~', &std::env::var("HOME").unwrap()))
+        .canonicalize()
+        .unwrap()
+        .as_path()
+        .to_str()
+        .unwrap()
+        .to_string()
 }
 
-pub fn tilde_expansion_in_place(s: &mut String) {
-    *s = tilde_expansion(s)
+pub fn canonicalize_path_in_place(s: &mut String) {
+    *s = canonicalize_path(s);
 }
 
 pub fn pretty_print_duration(d: Duration) -> String {

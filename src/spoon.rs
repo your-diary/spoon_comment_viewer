@@ -14,7 +14,6 @@ use thirtyfour_sync::ElementId;
 use thirtyfour_sync::WebDriverCommands;
 
 use super::chatgpt::ChatGPT;
-use super::coefont::CoeFont;
 use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
@@ -24,10 +23,11 @@ use super::player::Audio;
 use super::player::Player;
 use super::selenium::Selenium;
 use super::util;
+use super::voicevox::VoiceVox;
 
 pub struct Spoon {
     chatgpt: ChatGPT,
-    coefont: CoeFont,
+    voicevox: VoiceVox,
     player: Player,
     z: Selenium,
 
@@ -48,7 +48,7 @@ pub struct Spoon {
 impl Spoon {
     pub fn new(config: &Config) -> Self {
         let chatgpt = ChatGPT::new(config);
-        let coefont = CoeFont::new(config);
+        let voicevox = VoiceVox::new(config);
         let player = Player::new();
 
         let z = Selenium::new(
@@ -59,7 +59,7 @@ impl Spoon {
 
         Self {
             chatgpt,
-            coefont,
+            voicevox,
             player,
             z,
 
@@ -154,7 +154,7 @@ impl Spoon {
         //bgm
         if (live.bgm.enabled) {
             self.player
-                .play(&Audio::new(&live.bgm.path, live.bgm.volume, false, true));
+                .play_async(&Audio::new(&live.bgm.path, live.bgm.volume, false, true));
         }
 
         self.z.click("button.btn-create")?;
@@ -263,8 +263,8 @@ impl Spoon {
                             for mut s in s.chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
                             }
-                            if (config.coefont.enabled) {
-                                self.coefont.say(s);
+                            if (config.voicevox.enabled) {
+                                self.voicevox.say(s, false);
                             }
                         }
                     }
@@ -290,8 +290,8 @@ impl Spoon {
                             for mut s in s.chars().chunks(100).into_iter() {
                                 self.post_comment(&s.join(""))?;
                             }
-                            if (config.coefont.enabled) {
-                                self.coefont.say(s);
+                            if (config.voicevox.enabled) {
+                                self.voicevox.say(s, false);
                             }
                         }
                     }
@@ -304,8 +304,8 @@ impl Spoon {
                         && config.spoon.should_comment_guide)
                     {
                         self.post_comment(&c)?;
-                        if (config.coefont.enabled) {
-                            self.coefont.say(&c);
+                        if (config.voicevox.enabled) {
+                            self.voicevox.say(&c, false);
                         }
                     }
                 }
@@ -318,8 +318,8 @@ impl Spoon {
                     Self::log(constant::COLOR_YELLOW, &c, &timestamp);
                     if (config.spoon.should_comment_heart) {
                         self.post_comment(&c)?;
-                        if (config.coefont.enabled) {
-                            self.coefont.say(&c);
+                        if (config.voicevox.enabled) {
+                            self.voicevox.say(&c, true);
                         }
                     }
                 }
@@ -355,8 +355,8 @@ impl Spoon {
                                         groups.get(1).unwrap().as_str()
                                     );
                                     self.post_comment(&s)?;
-                                    if (config.coefont.enabled) {
-                                        self.coefont.say(&s);
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(&s, true);
                                     }
                                 }
 
@@ -385,8 +385,8 @@ impl Spoon {
                                         groups.get(1).unwrap().as_str(),
                                     );
                                     self.post_comment(&s)?;
-                                    if (config.coefont.enabled) {
-                                        self.coefont.say(&s);
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(&s, true);
                                     }
                                 }
 
@@ -410,8 +410,8 @@ impl Spoon {
                                         groups.get(1).unwrap().as_str(),
                                     );
                                     self.post_comment(&s)?;
-                                    if (config.coefont.enabled) {
-                                        self.coefont.say(&s);
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(&s, true);
                                     }
                                 }
                             }
@@ -451,8 +451,8 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c_with_time, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c_with_time)?;
-                    if (config.coefont.enabled) {
-                        self.coefont.say(&c);
+                    if (config.voicevox.enabled) {
+                        self.voicevox.say(&c, false);
                     }
                 }
                 self.previous_listeners_map.remove(&e);
@@ -462,8 +462,8 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
-                    if (config.coefont.enabled) {
-                        self.coefont.say(&c);
+                    if (config.voicevox.enabled) {
+                        self.voicevox.say(&c, false);
                     }
                 }
             }
@@ -477,8 +477,8 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
-                    if (config.coefont.enabled) {
-                        self.coefont.say(&c);
+                    if (config.voicevox.enabled) {
+                        self.voicevox.say(&c, false);
                     }
                 }
             } else {
@@ -487,8 +487,8 @@ impl Spoon {
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
-                    if (config.coefont.enabled) {
-                        self.coefont.say(&c);
+                    if (config.voicevox.enabled) {
+                        self.voicevox.say(&c, false);
                     }
                 }
             }
@@ -511,8 +511,8 @@ impl Spoon {
         std::fs::remove_file(p)?;
         if (!s.is_empty()) {
             self.post_comment(&s)?;
-            if (config.coefont.enabled) {
-                self.coefont.say(&s);
+            if (config.voicevox.enabled) {
+                self.voicevox.say(&s, false);
             }
         }
         Ok(())

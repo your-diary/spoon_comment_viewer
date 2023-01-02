@@ -7,22 +7,23 @@ use std::{
 
 use super::util;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Config {
     pub twitter: Twitter,
     pub spoon: Spoon,
     pub selenium: Selenium,
     pub coefont: CoeFont,
+    pub voicevox: VoiceVox,
     pub chatgpt: ChatGPT,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Twitter {
     pub id: String,
     pub password: String,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Spoon {
     pub url: String,
     pub comment_check_interval_ms: u64,
@@ -35,7 +36,7 @@ pub struct Spoon {
     pub live: Live,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Live {
     pub enabled: bool,
     pub start_url: String,
@@ -47,27 +48,39 @@ pub struct Live {
     pub bgm: BGM,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct BGM {
     pub enabled: bool,
     pub path: String,
     pub volume: f64,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Selenium {
     pub webdriver_port: usize,
     pub implicit_timeout_ms: u64,
     pub should_maximize_window: bool,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct CoeFont {
     pub enabled: bool,
     pub binary_path: String,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct VoiceVox {
+    pub enabled: bool,
+    pub should_skip_non_japanese: bool,
+    pub url: String,
+    pub api_key: String,
+    pub speaker: String,
+    pub speed: f64,
+    pub output_dir: String,
+    pub timeout_sec: u64,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ChatGPT {
     pub enabled: bool,
     pub project_dir: String,
@@ -88,11 +101,12 @@ impl Config {
         };
 
         let mut ret: Self = serde_json::from_str(&json_string).unwrap();
-        util::tilde_expansion_in_place(&mut ret.chatgpt.project_dir);
-        util::tilde_expansion_in_place(&mut ret.spoon.message_tunnel_file);
-        util::tilde_expansion_in_place(&mut ret.spoon.live.bg_image);
-        util::tilde_expansion_in_place(&mut ret.spoon.live.bgm.path);
-        util::tilde_expansion_in_place(&mut ret.coefont.binary_path);
+        util::canonicalize_path_in_place(&mut ret.chatgpt.project_dir);
+        util::canonicalize_path_in_place(&mut ret.spoon.message_tunnel_file);
+        util::canonicalize_path_in_place(&mut ret.spoon.live.bg_image);
+        util::canonicalize_path_in_place(&mut ret.spoon.live.bgm.path);
+        util::canonicalize_path_in_place(&mut ret.coefont.binary_path);
+        util::canonicalize_path_in_place(&mut ret.voicevox.output_dir);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }
