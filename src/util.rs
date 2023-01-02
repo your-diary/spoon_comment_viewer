@@ -4,6 +4,10 @@ pub fn tilde_expansion(s: &str) -> String {
     s.replace('~', &std::env::var("HOME").unwrap())
 }
 
+pub fn tilde_expansion_in_place(s: &mut String) {
+    *s = tilde_expansion(s)
+}
+
 pub fn pretty_print_duration(d: Duration) -> String {
     let s = d.as_secs();
     if (s <= 60) {

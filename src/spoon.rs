@@ -20,12 +20,15 @@ use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
 use super::listener;
+use super::player::Audio;
+use super::player::Player;
 use super::selenium::Selenium;
 use super::util;
 
 pub struct Spoon {
     chatgpt: ChatGPT,
     coefont: CoeFont,
+    player: Player,
     z: Selenium,
 
     //comments
@@ -46,6 +49,7 @@ impl Spoon {
     pub fn new(config: &Config) -> Self {
         let chatgpt = ChatGPT::new(config);
         let coefont = CoeFont::new(config);
+        let player = Player::new();
 
         let z = Selenium::new(
             config.selenium.webdriver_port,
@@ -56,6 +60,7 @@ impl Spoon {
         Self {
             chatgpt,
             coefont,
+            player,
             z,
 
             comment_set: HashSet::new(),
@@ -139,14 +144,17 @@ impl Spoon {
 
         //background image
         //|https://stackoverflow.com/questions/11256732/how-to-handle-windows-file-upload-using-selenium-webdriver|
-        if (!config.spoon.live.bg_image.is_empty()) {
-            if (!Path::new(&config.spoon.live.bg_image).is_file()) {
-                return Err(
-                    format!("bg image [ {} ] not found", config.spoon.live.bg_image).into(),
-                );
+        if (!live.bg_image.is_empty()) {
+            if (!Path::new(&live.bg_image).is_file()) {
+                return Err(format!("bg image [ {} ] not found", live.bg_image).into());
             }
-            self.z
-                .input("input.input-file", &config.spoon.live.bg_image)?
+            self.z.input("input.input-file", &live.bg_image)?
+        }
+
+        //bgm
+        if (live.bgm.enabled) {
+            self.player
+                .play(&Audio::new(&live.bgm.path, live.bgm.volume, false, true));
         }
 
         self.z.click("button.btn-create")?;

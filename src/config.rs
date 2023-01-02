@@ -44,6 +44,14 @@ pub struct Live {
     pub tags: Vec<String>,
     pub pinned_comment: String,
     pub bg_image: String,
+    pub bgm: BGM,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct BGM {
+    pub enabled: bool,
+    pub path: String,
+    pub volume: f64,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -80,10 +88,11 @@ impl Config {
         };
 
         let mut ret: Self = serde_json::from_str(&json_string).unwrap();
-        ret.chatgpt.project_dir = util::tilde_expansion(&ret.chatgpt.project_dir);
-        ret.spoon.message_tunnel_file = util::tilde_expansion(&ret.spoon.message_tunnel_file);
-        ret.spoon.live.bg_image = util::tilde_expansion(&ret.spoon.live.bg_image);
-        ret.coefont.binary_path = util::tilde_expansion(&ret.coefont.binary_path);
+        util::tilde_expansion_in_place(&mut ret.chatgpt.project_dir);
+        util::tilde_expansion_in_place(&mut ret.spoon.message_tunnel_file);
+        util::tilde_expansion_in_place(&mut ret.spoon.live.bg_image);
+        util::tilde_expansion_in_place(&mut ret.spoon.live.bgm.path);
+        util::tilde_expansion_in_place(&mut ret.coefont.binary_path);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }
