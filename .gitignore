@@ -6,3 +6,4 @@ memo.png
 log.txt
 *.sqlite3
 bgm/
+*.out
