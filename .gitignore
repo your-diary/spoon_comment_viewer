@@ -7,3 +7,4 @@ log.txt
 *.sqlite3
 bgm/
 *.out
+wav/

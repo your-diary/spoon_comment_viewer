@@ -4,13 +4,18 @@ use regex::Regex;
 
 //tilde expansion + makes it absolute path
 pub fn canonicalize_path(s: &str) -> String {
-    Path::new(&s.replace('~', &std::env::var("HOME").unwrap()))
-        .canonicalize()
-        .unwrap()
-        .as_path()
-        .to_str()
-        .unwrap()
-        .to_string()
+    let s = s.replace('~', &std::env::var("HOME").unwrap());
+    if (s.starts_with('/')) {
+        s
+    } else {
+        match Path::new(&s).canonicalize() {
+            Ok(p) => p.as_path().to_str().unwrap().to_string(),
+            Err(e) => {
+                println!("Failed to canonicalize the path [ {} ]; {}", s, e);
+                panic!();
+            }
+        }
+    }
 }
 
 pub fn canonicalize_path_in_place(s: &mut String) {
