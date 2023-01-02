@@ -1,6 +1,7 @@
 /target
 config.json*
 memo.md
+memo.png
 .*
 log.txt
 *.sqlite3

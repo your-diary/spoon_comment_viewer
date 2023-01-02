@@ -33,12 +33,20 @@ impl CoeFont {
 
     pub fn say(&mut self, prompt: &str) {
         if (self.enabled) {
-            self.stdin
+            if let Err(e) = self
+                .stdin
                 .as_mut()
                 .unwrap()
                 .write_all(format!("{}\n", prompt).as_bytes())
-                .unwrap();
-            self.stdin.as_mut().unwrap().flush().unwrap();
+            {
+                println!("{}", e);
+                self.enabled = false;
+                return;
+            }
+            if let Err(e) = self.stdin.as_mut().unwrap().flush() {
+                println!("{}", e);
+                self.enabled = false;
+            }
         }
     }
 }
