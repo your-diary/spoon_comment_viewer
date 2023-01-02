@@ -300,12 +300,30 @@ impl Spoon {
                 CommentType::Guide => {
                     let c = inner_text.replace("分前だよ！", "分前だよ");
                     Self::log(constant::COLOR_WHITE, &c, &timestamp);
-                    if ((inner_text.contains("10分前だよ") || inner_text.contains("1分前だよ"))
+                    if ((inner_text.contains("10分前だよ")
+                        || inner_text.contains("5分前だよ")
+                        || inner_text.contains("1分前だよ"))
                         && config.spoon.should_comment_guide)
                     {
                         self.post_comment(&c)?;
                         if (config.voicevox.enabled) {
                             self.voicevox.say(&c, false);
+                        }
+                    }
+
+                    //点呼
+                    if (inner_text.contains("1分前だよ") && config.spoon.should_call_over) {
+                        let c = "点呼するよ。";
+                        self.post_comment(c)?;
+                        if (config.voicevox.enabled) {
+                            self.voicevox.say(c, false);
+                        }
+                        for listener in &self.previous_listeners_set {
+                            let c = format!("{}さん、来てくれてありがとう。", listener);
+                            self.post_comment(&c)?;
+                            if (config.voicevox.enabled) {
+                                self.voicevox.say(&c, false);
+                            }
                         }
                     }
                 }

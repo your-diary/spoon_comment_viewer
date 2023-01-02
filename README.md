@@ -18,6 +18,8 @@
 
     - スプーンやバスターのお礼 (「スプーンありがとう」)
 
+    - 点呼 (配信終了直前)
+
 - 読み上げ機能 (VOICEVOXと連携してハーコメを読み上げるなど)
 
 - BGM再生 (ループ再生やボリュームの設定も可能)
@@ -80,6 +82,7 @@ $ cp ./config_template.json ./config.json
         "should_comment_heart": true,
         "should_comment_spoon": true,
         "should_comment_guide": true,
+        "should_call_over": true,
         "message_tunnel_file": "~/ramdisk/tunnel.txt",
         "live": {
             "enabled": false,

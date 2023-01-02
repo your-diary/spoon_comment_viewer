@@ -31,6 +31,7 @@ pub struct Spoon {
     pub should_comment_heart: bool,
     pub should_comment_spoon: bool,
     pub should_comment_guide: bool,
+    pub should_call_over: bool,
     pub message_tunnel_file: String,
     pub live: Live,
 }
