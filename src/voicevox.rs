@@ -11,6 +11,7 @@ use reqwest::blocking::{Client, Response};
 use super::config::Config;
 use super::player::Audio;
 use super::player::Player;
+use super::util;
 
 /*-------------------------------------*/
 
@@ -117,22 +118,26 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
 pub struct VoiceVox {
     enabled: bool,
+    should_skip_non_japanese: bool,
     tx: Option<Sender<APIRequest>>,
 }
 
 impl VoiceVox {
     pub fn new(config: &Config) -> Self {
         if (config.voicevox.enabled) {
+            let should_skip_non_japanese = config.voicevox.should_skip_non_japanese;
             let (tx, rx) = mpsc::channel();
             let config = config.clone();
             thread::spawn(move || api_thread(rx, config));
             Self {
                 enabled: true,
+                should_skip_non_japanese,
                 tx: Some(tx),
             }
         } else {
             Self {
                 enabled: false,
+                should_skip_non_japanese: false,
                 tx: None,
             }
         }
@@ -140,6 +145,9 @@ impl VoiceVox {
 
     pub fn say(&mut self, script: &str, should_reverb: bool) {
         if (!self.enabled) {
+            return;
+        }
+        if (self.should_skip_non_japanese && !util::is_japanese(script)) {
             return;
         }
         let req = APIRequest::new(script, should_reverb);
