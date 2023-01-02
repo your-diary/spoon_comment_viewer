@@ -12,7 +12,6 @@ pub struct Config {
     pub twitter: Twitter,
     pub spoon: Spoon,
     pub selenium: Selenium,
-    pub coefont: CoeFont,
     pub voicevox: VoiceVox,
     pub chatgpt: ChatGPT,
 }
@@ -63,12 +62,6 @@ pub struct Selenium {
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct CoeFont {
-    pub enabled: bool,
-    pub binary_path: String,
-}
-
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct VoiceVox {
     pub enabled: bool,
     pub should_skip_non_japanese: bool,
@@ -105,7 +98,6 @@ impl Config {
         util::canonicalize_path_in_place(&mut ret.spoon.message_tunnel_file);
         util::canonicalize_path_in_place(&mut ret.spoon.live.bg_image);
         util::canonicalize_path_in_place(&mut ret.spoon.live.bgm.path);
-        util::canonicalize_path_in_place(&mut ret.coefont.binary_path);
         util::canonicalize_path_in_place(&mut ret.voicevox.output_dir);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret

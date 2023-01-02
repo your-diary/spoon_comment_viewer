@@ -34,9 +34,15 @@
         "implicit_timeout_ms": 5000,
         "should_maximize_window": false
     },
-    "coefont": {
+    "voicevox": {
         "enabled": false,
-        "binary_path": "~/Build/coefontuber/coefontuber"
+        "should_skip_non_japanese": true,
+        "url": "https://api.su-shiki.com/v2/voicevox/audio/",
+        "api_key": "z-3_93p-77751-X",
+        "speaker": "a8cc6d22-aad0-4ab8-bf1e-2f843924164a",
+        "speed": 1.0,
+        "output_dir": "./wav",
+        "timeout_sec": 10
     },
     "chatgpt": {
         "enabled": false,
