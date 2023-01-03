@@ -11,9 +11,15 @@ impl Selenium {
     pub fn new(
         webdriver_port: usize,
         implicit_timeout: Duration,
+        profile_path: &Option<String>,
         should_maximize_window: bool,
     ) -> Self {
         let mut firefox = DesiredCapabilities::firefox();
+
+        if let Some(s) = profile_path {
+            firefox.add_firefox_arg("-profile").unwrap();
+            firefox.add_firefox_arg(s).unwrap();
+        }
 
         //disables desktop notification
         firefox
