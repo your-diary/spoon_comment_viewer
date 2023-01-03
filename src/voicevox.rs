@@ -6,8 +6,11 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use log::{error, info};
-use reqwest::blocking::{Client, Response};
+use log::error;
+use reqwest::{
+    blocking::{Client, Response},
+    StatusCode,
+};
 
 use super::config::Config;
 use super::player::Audio;
@@ -70,32 +73,49 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             Ok(r) => r,
         };
 
-        if (!res.status().is_success()) {
-            error!("res: {:?}", res); //TODO remove
-            error!("headers: {:?}", res.headers()); //TODO remove
-            error!("status: {}", res.status()); //TODO remove
-            let body = res.text().unwrap_or_default();
-            if (body.contains("429")) {
-                error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
-                thread::sleep(Duration::from_millis(10000));
-                while (rx.try_recv().is_ok()) {
-                    //discards
+        let response_status = res.status();
+        let response_header = res.headers().clone();
+
+        if (!response_status.is_success()) {
+            match response_status {
+                StatusCode::TOO_MANY_REQUESTS => {
+                    error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
+                    thread::sleep(Duration::from_millis(10000));
+                    while (rx.try_recv().is_ok()) {
+                        //discards
+                    }
                 }
-            } else if (body.contains("notEnoughPoints")) {
-                error!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
-                return;
-            } else {
-                error!("Ignorable error is returned from VOICEVOX API: [{}]", body);
+                StatusCode::FORBIDDEN => {
+                    error!("`403 Forbidden` is returned from VOICEVOX API. This may be temporary.");
+                }
+                _ => {
+                    let body = res.text().unwrap_or_default();
+                    if (body.contains("notEnoughPoints")) {
+                        error!(
+                            "`notEnoughPoints` is returned from VOICEVOX API. Thread terminated."
+                        );
+                        return;
+                    } else {
+                        error!("Unknown error is returned from VOICEVOX API: {{ status: {}, body: {} }}", response_status, body);
+                    }
+                }
             }
             continue;
         }
 
-        info!("{:?}", res.headers()); //TODO remove
-
         let body = match res.bytes() {
-            Ok(r) => r,
+            Ok(r) => {
+                if (r.is_empty()) {
+                    error!("Response from VOICEVOX API is unexpectedly empty.");
+                    error!("response header: {:?}", response_header);
+                    continue;
+                } else {
+                    r
+                }
+            }
             Err(e) => {
-                error!("Response from VOICEVOX API is unexpectedly empty: {}", e);
+                error!("Failed to read response from VOICEVOX API: {}", e);
+                error!("response header: {:?}", response_header);
                 continue;
             }
         };
