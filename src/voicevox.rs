@@ -10,6 +10,7 @@ use reqwest::blocking::{Client, Response};
 
 use super::config::Config;
 use super::player::Audio;
+use super::player::AudioEffect;
 use super::player::Player;
 use super::util;
 
@@ -17,14 +18,14 @@ use super::util;
 
 struct APIRequest {
     script: String,
-    should_reverb: bool,
+    effect: AudioEffect,
 }
 
 impl APIRequest {
-    fn new(script: &str, should_reverb: bool) -> Self {
+    fn new(script: &str, effect: AudioEffect) -> Self {
         Self {
             script: script.to_string(),
-            should_reverb,
+            effect,
         }
     }
 }
@@ -109,7 +110,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             continue;
         }
 
-        let audio = Audio::new(&filepath, 1., req.should_reverb, false);
+        let audio = Audio::new(&filepath, 1., req.effect);
         tx.send(audio).unwrap();
     }
 }
@@ -143,14 +144,14 @@ impl VoiceVox {
         }
     }
 
-    pub fn say(&mut self, script: &str, should_reverb: bool) {
+    pub fn say(&mut self, script: &str, effect: AudioEffect) {
         if (!self.enabled) {
             return;
         }
         if (self.should_skip_non_japanese && !util::is_japanese(script)) {
             return;
         }
-        let req = APIRequest::new(script, should_reverb);
+        let req = APIRequest::new(script, effect);
         if let Err(e) = self.tx.as_ref().unwrap().send(req) {
             println!("{}", e);
             self.enabled = false;

@@ -1,22 +1,32 @@
 use std::process::{Child, Command, Stdio};
 
+/*-------------------------------------*/
+
+#[derive(Default)]
+pub struct AudioEffect {
+    pub reverb: bool,
+    pub repeat: bool,
+}
+
+/*-------------------------------------*/
+
 pub struct Audio {
     path: String,
     volume: f64,
-    should_reverb: bool,
-    should_repeat: bool,
+    effect: AudioEffect,
 }
 
 impl Audio {
-    pub fn new(path: &str, volume: f64, should_reverb: bool, should_repeat: bool) -> Self {
+    pub fn new(path: &str, volume: f64, effect: AudioEffect) -> Self {
         Self {
             path: path.to_string(),
             volume,
-            should_reverb,
-            should_repeat,
+            effect,
         }
     }
 }
+
+/*-------------------------------------*/
 
 pub struct Player {
     children: Vec<Child>,
@@ -41,16 +51,19 @@ impl Player {
 
     fn play(&mut self, audio: &Audio, is_async: bool) {
         let mut args = vec![format!("-v {}", audio.volume), audio.path.clone()];
-        if (audio.should_reverb) {
+
+        if (audio.effect.reverb) {
             args.push("pad".to_string());
             args.push("0".to_string());
             args.push("2".to_string());
             args.push("reverb".to_string());
         }
-        if (audio.should_repeat) {
+
+        if (audio.effect.repeat) {
             args.push("repeat".to_string());
             args.push("-".to_string());
         }
+
         if let Ok(mut c) = Command::new("play")
             .args(args)
             .stdin(Stdio::null())
@@ -77,3 +90,5 @@ impl Drop for Player {
         });
     }
 }
+
+/*-------------------------------------*/
