@@ -283,18 +283,18 @@ impl Spoon {
 
                         let mut tokens = comment.text().split_whitespace().collect_vec();
                         if (tokens[0] == "/help") {
-                            let s = "[ヘルプ]\n`reverb`, `high`, `low`, `left`, `right`, `fast`, `slow`のどれかを`/reverb こんにちは`という形で使ってみてね。";
+                            let s = "[ヘルプ]\n`reverb`, `high`, `low`, `left`, `right`, `fast`, `slow` のどれかを `/reverb テキスト` という形で使ってみてね。";
                             self.post_comment(s)?;
                             continue;
                         } else if (tokens[0].starts_with('/')) {
                             match tokens[0] {
-                                "reverb" => effect.reverb = true,
-                                "high" => effect.high = true,
-                                "low" => effect.low = true,
-                                "left" => effect.left = true,
-                                "right" => effect.right = true,
-                                "fast" => effect.fast = true,
-                                "slow" => effect.slow = true,
+                                "/reverb" => effect.reverb = true,
+                                "/high" => effect.high = true,
+                                "/low" => effect.low = true,
+                                "/left" => effect.left = true,
+                                "/right" => effect.right = true,
+                                "/fast" => effect.fast = true,
+                                "/slow" => effect.slow = true,
                                 _ => {
                                     let s = format!(
                                         "`{}`は無効なコマンドだよ。`/help`で確認してね。",
