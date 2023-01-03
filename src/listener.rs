@@ -9,7 +9,7 @@ struct Listeners {
     next: String,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, Hash, PartialEq)]
 pub struct Listener {
     pub id: usize,        //internal user id such as `315121534`
     pub nickname: String, //username

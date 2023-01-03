@@ -18,7 +18,7 @@ use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
-use super::listener;
+use super::listener::{self, Listener};
 use super::player::Audio;
 use super::player::Player;
 use super::selenium::Selenium;
@@ -36,9 +36,9 @@ pub struct Spoon {
     previous_commenter: String,      //for combo comment
 
     //listeners
-    previous_listeners_set: HashSet<String>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
-    previous_listeners_map: HashMap<String, Instant>, //for `xxx秒の滞在でした`
-    cumulative_listeners: HashSet<String>,   //for `おかえりなさい`
+    previous_listeners_set: HashSet<Listener>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
+    previous_listeners_map: HashMap<Listener, Instant>, //for `xxx秒の滞在でした`
+    cumulative_listeners: HashSet<Listener>,   //for `おかえりなさい`
 
     //api call
     http_client: Client,
@@ -333,7 +333,7 @@ impl Spoon {
                             self.voicevox.say(c, false);
                         }
                         for listener in &self.previous_listeners_set {
-                            let c = format!("{}さん、来てくれてありがとう。", listener);
+                            let c = format!("{}さん、来てくれてありがとう。", listener.nickname);
                             self.post_comment(&c)?;
                             if (config.voicevox.enabled) {
                                 self.voicevox.say(&c, false);
@@ -473,18 +473,16 @@ impl Spoon {
     pub fn process_listeners(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
         let timestamp = self.get_timestamp()?;
 
-        let listeners_set: HashSet<String> =
-            listener::retrieve_listeners(&self.http_client, self.live_id)?
-                .into_iter()
-                .map(|e| e.nickname)
-                .collect();
+        let listeners_set = listener::retrieve_listeners(&self.http_client, self.live_id)?
+            .into_iter()
+            .collect::<HashSet<_>>();
 
         let exited_listeners = &self.previous_listeners_set - &listeners_set;
         let new_listeners = &listeners_set - &self.previous_listeners_set;
 
         for e in exited_listeners {
             if (self.previous_listeners_map.contains_key(&e)) {
-                let c = format!("{}さん、また来てね。", e);
+                let c = format!("{}さん、また来てね。", e.nickname);
                 let c_with_time = format!(
                     "{}(滞在時間: {})",
                     c,
@@ -502,7 +500,7 @@ impl Spoon {
                 self.previous_listeners_map.remove(&e);
             } else {
                 //unexpected to happen
-                let c = format!("{}さん、また来てね。", e);
+                let c = format!("{}さん、また来てね。", e.nickname);
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
@@ -517,7 +515,7 @@ impl Spoon {
             self.previous_listeners_map
                 .insert(e.clone(), Instant::now());
             if (self.cumulative_listeners.contains(&e)) {
-                let c = format!("{}さん、おかえりなさい。", e);
+                let c = format!("{}さん、おかえりなさい。", e.nickname);
                 Self::log(constant::COLOR_GREEN, &c, &timestamp);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
@@ -527,8 +525,12 @@ impl Spoon {
                 }
             } else {
                 self.cumulative_listeners.insert(e.clone());
-                let c = format!("{}さん、いらっしゃい。", e);
-                Self::log(constant::COLOR_GREEN, &c, &timestamp);
+                let c = format!("{}さん、いらっしゃい。", e.nickname);
+                Self::log(
+                    constant::COLOR_GREEN,
+                    &format!("{} ({:?})", c, e), //We print `e` itself to trace the unique user id of a troll.
+                    &timestamp,
+                );
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
