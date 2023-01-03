@@ -104,7 +104,6 @@ $ cp ./config_template.json ./config.json
     "selenium": {
         "webdriver_port": 4444,
         "implicit_timeout_ms": 5000,
-        "profile_path": null,
         "should_maximize_window": false
     },
     "voicevox": {

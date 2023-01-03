@@ -59,7 +59,6 @@ pub struct BGM {
 pub struct Selenium {
     pub webdriver_port: usize,
     pub implicit_timeout_ms: u64,
-    pub profile_path: Option<String>,
     pub should_maximize_window: bool,
 }
 
@@ -101,9 +100,6 @@ impl Config {
         util::canonicalize_path_in_place(&mut ret.spoon.live.bg_image);
         util::canonicalize_path_in_place(&mut ret.spoon.live.bgm.path);
         util::canonicalize_path_in_place(&mut ret.voicevox.output_dir);
-        if let Some(ref mut s) = ret.selenium.profile_path {
-            util::canonicalize_path_in_place(s);
-        }
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
     }
