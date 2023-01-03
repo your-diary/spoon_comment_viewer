@@ -450,6 +450,18 @@ impl Spoon {
                         }
                     }
                 }
+
+                CommentType::Block => {
+                    let c = inner_text;
+                    Self::log(constant::COLOR_RED, &c, &timestamp);
+                    if (config.spoon.should_comment_block) {
+                        self.post_comment(&c)?;
+                        if (config.voicevox.enabled) {
+                            self.voicevox.say(&c, true);
+                        }
+                    }
+                }
+
                 CommentType::Unknown => continue,
                 //}}}
             }
