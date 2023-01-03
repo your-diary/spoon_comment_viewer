@@ -5,6 +5,12 @@ use std::process::{Child, Command, Stdio};
 #[derive(Default)]
 pub struct AudioEffect {
     pub reverb: bool,
+    pub high: bool,
+    pub low: bool,
+    pub left: bool,
+    pub right: bool,
+    pub fast: bool,
+    pub slow: bool,
     pub repeat: bool,
 }
 
@@ -52,16 +58,32 @@ impl Player {
     fn play(&mut self, audio: &Audio, is_async: bool) {
         let mut args = vec![format!("-v {}", audio.volume), audio.path.clone()];
 
+        let mut set_args = |v: Vec<&'static str>| {
+            v.iter().for_each(|e| args.push(e.to_string()));
+        };
         if (audio.effect.reverb) {
-            args.push("pad".to_string());
-            args.push("0".to_string());
-            args.push("2".to_string());
-            args.push("reverb".to_string());
+            set_args(vec!["pad", "0", "2", "reverb"]);
         }
-
+        if (audio.effect.high) {
+            set_args(vec!["pitch", "300"]);
+        }
+        if (audio.effect.low) {
+            set_args(vec!["pitch", "-100"]);
+        }
+        if (audio.effect.left) {
+            set_args(vec!["remix", "1v1", "1v0"]);
+        }
+        if (audio.effect.right) {
+            set_args(vec!["remix", "1v0", "1v1"]);
+        }
+        if (audio.effect.fast) {
+            set_args(vec!["tempo", "1.5"]);
+        }
+        if (audio.effect.slow) {
+            set_args(vec!["tempo", "0.6"]);
+        }
         if (audio.effect.repeat) {
-            args.push("repeat".to_string());
-            args.push("-".to_string());
+            set_args(vec!["repeat", "-"]);
         }
 
         if let Ok(mut c) = Command::new("play")

@@ -258,22 +258,69 @@ impl Spoon {
                 Ok(s) => s,
             };
 
-            match CommentType::new(class_name) {
+            let comment_type = CommentType::new(class_name);
+            match comment_type {
                 //match arms {{{
-                CommentType::Message => {
-                    let tokens = inner_text.splitn(2, '\n').collect_vec();
-                    if (tokens.len() != 2) {
-                        println!("Comment [ {} ] has an unexpected form.", inner_text);
-                        continue;
-                    }
+                CommentType::Message | CommentType::Combo => {
+                    let is_combo = comment_type == CommentType::Combo;
 
-                    let comment = Comment::new(tokens[0].to_string(), tokens[1].to_string());
+                    let comment = if (is_combo) {
+                        Comment::new(self.previous_commenter.clone(), inner_text)
+                    } else {
+                        let tokens = inner_text.splitn(2, '\n').collect_vec();
+                        if (tokens.len() != 2) {
+                            println!("Comment [ {} ] has an unexpected form.", inner_text);
+                            continue;
+                        }
+                        Comment::new(tokens[0].to_string(), tokens[1].to_string())
+                    };
+
                     Self::log("", &comment.to_string(), &timestamp);
 
-                    //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
-                    //      Refactoring this as a method was difficult since `self.chatgpt.complete()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
+                        let mut effect = AudioEffect::default();
+
+                        let mut tokens = comment.text().split_whitespace().collect_vec();
+                        if (tokens[0] == "/help") {
+                            let s = "[ヘルプ]\n`reverb`, `high`, `low`, `left`, `right`, `fast`, `slow`のどれかを`/reverb こんにちは`という形で使ってみてね。";
+                            self.post_comment(s)?;
+                            continue;
+                        } else if (tokens[0].starts_with('/')) {
+                            match tokens[0] {
+                                "reverb" => effect.reverb = true,
+                                "high" => effect.high = true,
+                                "low" => effect.low = true,
+                                "left" => effect.left = true,
+                                "right" => effect.right = true,
+                                "fast" => effect.fast = true,
+                                "slow" => effect.slow = true,
+                                _ => {
+                                    let s = format!(
+                                        "`{}`は無効なコマンドだよ。`/help`で確認してね。",
+                                        tokens[0]
+                                    );
+                                    self.post_comment(&s)?;
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(&s, effect);
+                                    }
+                                    continue;
+                                }
+                            }
+                            tokens.remove(0);
+                            if (tokens.is_empty()) {
+                                let s = format!(
+                                    "`{}`単体では使用できないよ。`/help`で確認してね。",
+                                    tokens[0]
+                                );
+                                self.post_comment(&s)?;
+                                if (config.voicevox.enabled) {
+                                    self.voicevox.say(&s, AudioEffect::default());
+                                }
+                                continue;
+                            }
+                        }
+
                         //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
                         if let Some(s) = self
                             .chatgpt
@@ -290,31 +337,8 @@ impl Spoon {
                         }
                     }
 
-                    self.previous_commenter = String::from(comment.user());
-                }
-
-                CommentType::Combo => {
-                    let comment = Comment::new(self.previous_commenter.clone(), inner_text);
-                    Self::log("", &comment.to_string(), &timestamp);
-
-                    //NOTE: This code shall sync with that in `CommentType::Combo => { ... }`.
-                    //      Refactoring this as a method was difficult since `self.chatgpt.complete()` borrows self as mutable though we already borrow self in `let l = self.z.query_all("li.chat-list-item")?;`.
-                    if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
-                    {
-                        //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
-                        if let Some(s) = self
-                            .chatgpt
-                            .complete(&comment.text().split_whitespace().join(" "))
-                        {
-                            let s = s.trim();
-                            //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
-                            for mut s in s.chars().chunks(100).into_iter() {
-                                self.post_comment(&s.join(""))?;
-                            }
-                            if (config.voicevox.enabled) {
-                                self.voicevox.say(s, AudioEffect::default());
-                            }
-                        }
+                    if (!is_combo) {
+                        self.previous_commenter = String::from(comment.user());
                     }
                 }
 

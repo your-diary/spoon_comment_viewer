@@ -36,6 +36,7 @@ impl Display for Comment {
 
 /*-------------------------------------*/
 
+#[derive(PartialEq)]
 pub enum CommentType {
     Message, //normal comment
     Combo, //When a single user posts comments in a row, all of the comments except the first one are "combo".
