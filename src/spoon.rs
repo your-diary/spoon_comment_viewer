@@ -232,6 +232,17 @@ impl Spoon {
                 num_new_comment
             );
             error!(
+                "Existing comments: {:?}",
+                l.iter()
+                    .dropping_back(num_new_comment)
+                    .map(|e| S {
+                        element_id: e.element_id.to_string(),
+                        class: e.class_name().unwrap_or_default().unwrap_or_default(),
+                        inner_text: e.text().unwrap_or_default()
+                    })
+                    .collect_vec()
+            );
+            error!(
                 "New comments: {:?}",
                 l.iter()
                     .skip(l.len() - num_new_comment)

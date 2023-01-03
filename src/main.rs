@@ -1,3 +1,4 @@
+use std::env;
 use std::error::Error;
 use std::io::{self, Write};
 use std::sync::mpsc;
@@ -12,6 +13,7 @@ use spoon_comment_viewer::spoon::Spoon;
 const CONFIG_FILE: &str = "./config.json";
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
     let (tx, rx) = mpsc::channel();
