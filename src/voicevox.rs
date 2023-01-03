@@ -103,7 +103,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap()
-                .as_secs()
+                .as_micros()
         );
         if let Err(e) = fs::write(&filepath, body) {
             println!("Failed to write to the file [ {} ]: {}", filepath, e);
