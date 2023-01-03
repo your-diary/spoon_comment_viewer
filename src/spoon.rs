@@ -277,22 +277,23 @@ impl Spoon {
 
                     Self::log("", &comment.to_string(), &timestamp);
 
+                    let mut comment_text = comment.text().to_string();
+                    let mut effect = AudioEffect::default();
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
-                        let mut effect = AudioEffect::default();
-
-                        let mut tokens = comment.text().split_whitespace().collect_vec();
+                        let mut tokens = comment_text.split_whitespace().collect_vec();
                         if (tokens[0] == "/help") {
-                            let s = "[ヘルプ]\n`reverb`, `high`, `low`, `left`, `right`, `fast`, `slow` のどれかを `/reverb テキスト` という形で使ってみてね。";
+                            let s = "[ヘルプ]\n`echo`, `high`, `low`, `fast`, `slow` のどれかを `/echo テキスト` という形で使ってみてね。";
                             self.post_comment(s)?;
                             continue;
                         } else if (tokens[0].starts_with('/')) {
                             match tokens[0] {
                                 "/reverb" => effect.reverb = true,
+                                "/echo" => effect.reverb = true, //same as `/reverb`
                                 "/high" => effect.high = true,
                                 "/low" => effect.low = true,
-                                "/left" => effect.left = true,
-                                "/right" => effect.right = true,
+                                "/left" => effect.left = true, //low quality on Linux
+                                "/right" => effect.right = true, //low quality on Linux
                                 "/fast" => effect.fast = true,
                                 "/slow" => effect.slow = true,
                                 _ => {
@@ -301,14 +302,10 @@ impl Spoon {
                                         tokens[0]
                                     );
                                     self.post_comment(&s)?;
-                                    if (config.voicevox.enabled) {
-                                        self.voicevox.say(&s, effect);
-                                    }
                                     continue;
                                 }
                             }
-                            tokens.remove(0);
-                            if (tokens.is_empty()) {
+                            if (tokens.len() == 1) {
                                 let s = format!(
                                     "`{}`単体では使用できないよ。`/help`で確認してね。",
                                     tokens[0]
@@ -319,12 +316,14 @@ impl Spoon {
                                 }
                                 continue;
                             }
+                            tokens.remove(0);
+                            comment_text = tokens.join(" ");
                         }
 
                         //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
                         if let Some(s) = self
                             .chatgpt
-                            .complete(&comment.text().split_whitespace().join(" "))
+                            .complete(&comment_text.split_whitespace().join(" "))
                         {
                             let s = s.trim();
                             //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
@@ -332,7 +331,7 @@ impl Spoon {
                                 self.post_comment(&s.join(""))?;
                             }
                             if (config.voicevox.enabled) {
-                                self.voicevox.say(s, AudioEffect::default());
+                                self.voicevox.say(s, effect);
                             }
                         }
                     }

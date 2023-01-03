@@ -68,7 +68,7 @@ impl Player {
             set_args(vec!["pitch", "300"]);
         }
         if (audio.effect.low) {
-            set_args(vec!["pitch", "-100"]);
+            set_args(vec!["pitch", "-250"]);
         }
         if (audio.effect.left) {
             set_args(vec!["remix", "1v1", "1v0"]);
