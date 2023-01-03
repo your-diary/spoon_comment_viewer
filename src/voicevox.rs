@@ -71,6 +71,9 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         };
 
         if (!res.status().is_success()) {
+            error!("res: {:?}", res); //TODO remove
+            error!("headers: {:?}", res.headers()); //TODO remove
+            error!("status: {}", res.status()); //TODO remove
             let body = res.text().unwrap_or_default();
             if (body.contains("429")) {
                 error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
@@ -86,6 +89,8 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             }
             continue;
         }
+
+        info!("{:?}", res.headers()); //TODO remove
 
         let body = match res.bytes() {
             Ok(r) => r,
