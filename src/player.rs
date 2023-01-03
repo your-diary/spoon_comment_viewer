@@ -1,5 +1,7 @@
 use std::process::{Child, Command, Stdio};
 
+use log::error;
+
 /*-------------------------------------*/
 
 #[derive(Default)]
@@ -98,7 +100,7 @@ impl Player {
             } else {
                 #[allow(clippy::collapsible_else_if)]
                 if let Err(e) = c.wait() {
-                    println!("Failed to play the audio: {}", e);
+                    error!("Failed to play the audio: {}", e);
                 }
             }
         }

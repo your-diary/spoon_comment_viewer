@@ -7,6 +7,7 @@ use std::time::Instant;
 
 use chrono::Local;
 use itertools::Itertools;
+use log::error;
 use regex::Regex;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
@@ -219,18 +220,18 @@ impl Spoon {
         //However, it sometimes happened for some reason: at that time, it seemed the already processed comments in the past were mistakenly treated as new comments.
         //The cause is unknown but we suspect `element_id` may be reassigned by a bug of Spoon or Selenium.
         } else if (num_new_comment >= 15) {
-            #[allow(dead_code)] //actually used in `println!()`
+            #[allow(dead_code)] //actually used in `error!()`
             #[derive(Debug)]
             struct S {
                 element_id: String,
                 class: String,
                 inner_text: String,
             }
-            println!(
+            error!(
                 "The value of `num_new_comment` is too large: {}",
                 num_new_comment
             );
-            println!(
+            error!(
                 "New comments: {:?}",
                 l.iter()
                     .skip(l.len() - num_new_comment)
@@ -252,7 +253,7 @@ impl Spoon {
 
             let class_name = match e.class_name() {
                 Err(e) => {
-                    println!("{}", e);
+                    error!("{}", e);
                     continue;
                 }
                 Ok(s) => s,
@@ -269,7 +270,7 @@ impl Spoon {
                     } else {
                         let tokens = inner_text.splitn(2, '\n').collect_vec();
                         if (tokens.len() != 2) {
-                            println!("Comment [ {} ] has an unexpected form.", inner_text);
+                            error!("Comment [ {} ] has an unexpected form.", inner_text);
                             continue;
                         }
                         Comment::new(tokens[0].to_string(), tokens[1].to_string())
@@ -399,7 +400,7 @@ impl Spoon {
                         None => (),
                         Some(groups) => {
                             if (groups.len() != 3) {
-                                println!("Present [ {} ] has an unexpected form.", inner_text);
+                                error!("Present [ {} ] has an unexpected form.", inner_text);
                                 continue;
                             }
 

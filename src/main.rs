@@ -4,12 +4,16 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
+use log::error;
+
 use spoon_comment_viewer::config::Config;
 use spoon_comment_viewer::spoon::Spoon;
 
 const CONFIG_FILE: &str = "./config.json";
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
+
     let (tx, rx) = mpsc::channel();
 
     ctrlc::set_handler(move || {
@@ -60,20 +64,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         ));
 
         if let Err(e) = spoon.process_comments(&config) {
-            println!("{}", e);
+            error!("{}", e);
             continue;
         }
 
         //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
         if ((c as usize) % config.spoon.listener_check_interval_ratio == 0) {
             if let Err(e) = spoon.process_listeners(&config) {
-                println!("{}", e);
+                error!("{}", e);
                 continue;
             }
         }
 
         if let Err(e) = spoon.process_message_tunnel(&config) {
-            println!("{}", e);
+            error!("{}", e);
             continue;
         }
     }

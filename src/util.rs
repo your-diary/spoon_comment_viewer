@@ -1,5 +1,6 @@
 use std::{path::Path, time::Duration};
 
+use log::error;
 use regex::Regex;
 
 //tilde expansion + makes it absolute path
@@ -11,7 +12,7 @@ pub fn canonicalize_path(s: &str) -> String {
         match Path::new(&s).canonicalize() {
             Ok(p) => p.as_path().to_str().unwrap().to_string(),
             Err(e) => {
-                println!("Failed to canonicalize the path [ {} ]; {}", s, e);
+                error!("Failed to canonicalize the path [ {} ]; {}", s, e);
                 panic!();
             }
         }

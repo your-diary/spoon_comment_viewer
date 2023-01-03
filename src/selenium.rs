@@ -1,6 +1,7 @@
 use std::process;
 use std::time::Duration;
 
+use log::{error, info};
 use thirtyfour_sync::{error::WebDriverError, prelude::*};
 
 pub struct Selenium {
@@ -37,7 +38,7 @@ impl Selenium {
         ) {
             Ok(o) => o,
             Err(_) => {
-                println!("Is `geckodriver` running?");
+                error!("Is `geckodriver` running?");
                 process::exit(1);
             }
         };
@@ -91,6 +92,6 @@ impl Selenium {
 
 impl Drop for Selenium {
     fn drop(&mut self) {
-        println!("Closing the driver...");
+        info!("Closing the driver...");
     }
 }

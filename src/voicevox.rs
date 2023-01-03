@@ -6,6 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use log::{error, info};
 use reqwest::blocking::{Client, Response};
 
 use super::config::Config;
@@ -63,7 +64,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
         let res: Response = match client.get(&config.url).query(&params).send() {
             Err(e) => {
-                println!("{}", e);
+                error!("Failed to send the request: {}", e);
                 continue;
             }
             Ok(r) => r,
@@ -72,19 +73,16 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         if (!res.status().is_success()) {
             let body = res.text().unwrap_or_default();
             if (body.contains("429")) {
-                println!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
+                error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
                 thread::sleep(Duration::from_millis(10000));
                 while (rx.try_recv().is_ok()) {
                     //discards
                 }
             } else if (body.contains("notEnoughPoints")) {
-                println!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
+                error!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
                 return;
             } else {
-                println!(
-                    "Ignorable error is returned from VOICEVOX API: [ {} ]",
-                    body
-                );
+                error!("Ignorable error is returned from VOICEVOX API: [{}]", body);
             }
             continue;
         }
@@ -92,7 +90,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         let body = match res.bytes() {
             Ok(r) => r,
             Err(e) => {
-                println!("Response from VOICEVOX API is unexpectedly empty: {}", e);
+                error!("Response from VOICEVOX API is unexpectedly empty: {}", e);
                 continue;
             }
         };
@@ -106,7 +104,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
                 .as_micros()
         );
         if let Err(e) = fs::write(&filepath, body) {
-            println!("Failed to write to the file [ {} ]: {}", filepath, e);
+            error!("Failed to write to the file [ {} ]: {}", filepath, e);
             continue;
         }
 
@@ -153,7 +151,7 @@ impl VoiceVox {
         }
         let req = APIRequest::new(script, effect);
         if let Err(e) = self.tx.as_ref().unwrap().send(req) {
-            println!("{}", e);
+            error!("{}", e);
             self.enabled = false;
         }
     }
