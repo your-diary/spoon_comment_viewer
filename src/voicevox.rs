@@ -71,7 +71,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             );
 
             let res = match Command::new("google_speech")
-                .args(["--output", &filepath])
+                .args(["--output", &filepath, &req.script])
                 .output()
             {
                 Ok(r) => r,
