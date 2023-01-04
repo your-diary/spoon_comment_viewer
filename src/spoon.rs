@@ -220,38 +220,9 @@ impl Spoon {
         //However, it sometimes happened for some reason: at that time, it seemed the already processed comments in the past were mistakenly treated as new comments.
         //The cause is unknown but we suspect `element_id` may be reassigned by a bug of Spoon or Selenium.
         } else if (num_new_comment >= 15) {
-            #[allow(dead_code)] //actually used in `error!()`
-            #[derive(Debug)]
-            struct S {
-                element_id: String,
-                class: String,
-                inner_text: String,
-            }
             error!(
-                "The value of `num_new_comment` is too large: {}",
+                "The value of `num_new_comment` is too large: {}. Ignoring them...",
                 num_new_comment
-            );
-            error!(
-                "Existing comments: {:?}",
-                l.iter()
-                    .dropping_back(num_new_comment)
-                    .map(|e| S {
-                        element_id: e.element_id.to_string(),
-                        class: e.class_name().unwrap_or_default().unwrap_or_default(),
-                        inner_text: e.text().unwrap_or_default()
-                    })
-                    .collect_vec()
-            );
-            error!(
-                "New comments: {:?}",
-                l.iter()
-                    .skip(l.len() - num_new_comment)
-                    .map(|e| S {
-                        element_id: e.element_id.to_string(),
-                        class: e.class_name().unwrap_or_default().unwrap_or_default(),
-                        inner_text: e.text().unwrap_or_default()
-                    })
-                    .collect_vec()
             );
             return Ok(());
         }
