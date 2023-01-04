@@ -72,11 +72,11 @@ impl Player {
             }
             if (audio.effect.pitch_for_english) {
                 if (audio.effect.high) {
-                    set_args(vec!["pitch", "550"]);
+                    set_args(vec!["pitch", "450"]);
                 } else if (audio.effect.low) {
                     set_args(vec!["pitch", "-300"]);
                 } else {
-                    set_args(vec!["pitch", "250"]);
+                    set_args(vec!["pitch", "150"]);
                 }
             } else {
                 if (audio.effect.high) {

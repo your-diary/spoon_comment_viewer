@@ -89,7 +89,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
                 continue;
             }
 
-            let audio = Audio::new(&filepath, 1., req.effect);
+            let audio = Audio::new(&filepath, 2., req.effect);
             tx.send(audio).unwrap();
 
         //for Japanese
