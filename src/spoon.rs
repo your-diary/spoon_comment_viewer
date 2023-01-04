@@ -27,6 +27,66 @@ use super::selenium::Selenium;
 use super::util;
 use super::voicevox::VoiceVox;
 
+struct Logger {
+    timestamp: String,
+    num_spoon: String,
+    num_heart: String,
+    num_current_listener: String,
+    num_total_listener: String,
+}
+
+impl Logger {
+    fn new(z: &Selenium) -> Result<Self, Box<dyn Error>> {
+        let mut timestamp = z
+            .inner_text(".time-chip-container span")?
+            .trim()
+            .to_string();
+        if (timestamp.len() == 5) {
+            timestamp = format!("00:{}", timestamp);
+        }
+
+        let count_info_list = z.query_all("ul.count-info-list li")?;
+        if (count_info_list.len() != 4) {
+            return Err(format!(
+                "`count_info_list` is of an unexpected form: {:?}",
+                count_info_list
+            )
+            .into());
+        }
+        let (num_spoon, num_heart, num_current_listener, num_total_listener) = (
+            count_info_list[0].text()?.trim().to_string(),
+            count_info_list[1].text()?.trim().to_string(),
+            count_info_list[2].text()?.trim().to_string(),
+            count_info_list[3].text()?.trim().to_string(),
+        );
+
+        Ok(Self {
+            timestamp,
+            num_spoon,
+            num_heart,
+            num_current_listener,
+            num_total_listener,
+        })
+    }
+
+    fn log(&self, color: Option<&str>, s: &str) {
+        println!(
+            "{}[{} ({}) ({}/{}/{}/{})]{}{} {}{}",
+            constant::COLOR_BLACK,
+            Local::now().format("%H:%M:%S"),
+            self.timestamp,
+            self.num_spoon,
+            self.num_heart,
+            self.num_current_listener,
+            self.num_total_listener,
+            constant::NO_COLOR,
+            color.unwrap_or_default(),
+            s,
+            constant::NO_COLOR,
+        );
+    }
+}
+
 pub struct Spoon {
     chatgpt: ChatGPT,
     voicevox: VoiceVox,
@@ -78,19 +138,6 @@ impl Spoon {
                 .unwrap(),
             live_id: 0,
         }
-    }
-
-    fn log(color: &str, s: &str, timestamp: &str) {
-        println!(
-            "{}[{} ({})]{}{} {}{}",
-            constant::COLOR_BLACK,
-            Local::now().format("%H:%M:%S"),
-            timestamp,
-            constant::NO_COLOR,
-            color,
-            s,
-            constant::NO_COLOR,
-        );
     }
 
     pub fn login(
@@ -186,18 +233,14 @@ impl Spoon {
         Ok(())
     }
 
-    fn get_timestamp(&self) -> Result<String, WebDriverError> {
-        self.z.inner_text(".time-chip-container span")
-    }
-
     fn post_comment(&self, s: &str) -> Result<(), WebDriverError> {
         self.z.input("textarea", s)?;
         self.z.click("button[title='送信']")?;
         Ok(())
     }
 
-    pub fn process_comments(&mut self, config: &Config) -> Result<(), WebDriverError> {
-        let timestamp = self.get_timestamp()?;
+    pub fn process_comments(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
+        let logger = Logger::new(&self.z)?;
 
         let l = self.z.query_all("li.chat-list-item")?;
 
@@ -258,7 +301,7 @@ impl Spoon {
                         Comment::new(tokens[0].to_string(), tokens[1].to_string())
                     };
 
-                    Self::log("", &comment.to_string(), &timestamp);
+                    logger.log(None, &comment.to_string());
 
                     let mut comment_text = comment.text().to_string();
                     let mut effect = AudioEffect::default();
@@ -326,7 +369,7 @@ impl Spoon {
 
                 CommentType::Guide => {
                     let c = inner_text.replace("分前だよ！", "分前だよ");
-                    Self::log(constant::COLOR_WHITE, &c, &timestamp);
+                    logger.log(Some(constant::COLOR_WHITE), &c);
                     if ((inner_text.contains("10分前だよ")
                         || inner_text.contains("5分前だよ")
                         || inner_text.contains("1分前だよ"))
@@ -360,7 +403,7 @@ impl Spoon {
                         "{}さん、ハートありがとう。",
                         inner_text.replace("さんがハートを押したよ！", "")
                     );
-                    Self::log(constant::COLOR_YELLOW, &c, &timestamp);
+                    logger.log(Some(constant::COLOR_YELLOW), &c);
                     if (config.spoon.should_comment_heart) {
                         self.post_comment(&c)?;
                         if (config.voicevox.enabled) {
@@ -388,8 +431,8 @@ impl Spoon {
 
                             //buster
                             if (groups.get(2).unwrap().as_str().starts_with("ハート")) {
-                                Self::log(
-                                    "",
+                                logger.log(
+                                    None,
                                     &format!(
                                         "{}{}:{} {}",
                                         constant::COLOR_RED,
@@ -397,7 +440,6 @@ impl Spoon {
                                         constant::NO_COLOR,
                                         groups.get(2).unwrap().as_str(),
                                     ),
-                                    &timestamp,
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
@@ -424,8 +466,8 @@ impl Spoon {
                                 .as_str()
                                 .starts_with("心ばかりの粗品"))
                             {
-                                Self::log(
-                                    "",
+                                logger.log(
+                                    None,
                                     &format!(
                                         "{}{}:{} {}",
                                         constant::COLOR_RED,
@@ -433,7 +475,6 @@ impl Spoon {
                                         constant::NO_COLOR,
                                         groups.get(2).unwrap().as_str(),
                                     ),
-                                    &timestamp,
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
@@ -455,8 +496,8 @@ impl Spoon {
 
                             //spoon
                             } else {
-                                Self::log(
-                                    "",
+                                logger.log(
+                                    None,
                                     &format!(
                                         "{}{}:{} {}",
                                         constant::COLOR_CYAN,
@@ -464,7 +505,6 @@ impl Spoon {
                                         constant::NO_COLOR,
                                         groups.get(2).unwrap().as_str(),
                                     ),
-                                    &timestamp,
                                 );
 
                                 if (config.spoon.should_comment_spoon) {
@@ -490,7 +530,7 @@ impl Spoon {
 
                 CommentType::Block => {
                     let c = inner_text;
-                    Self::log(constant::COLOR_RED, &c, &timestamp);
+                    logger.log(Some(constant::COLOR_RED), &c);
                     if (config.spoon.should_comment_block) {
                         self.post_comment(&c)?;
                         if (config.voicevox.enabled) {
@@ -508,7 +548,7 @@ impl Spoon {
     }
 
     pub fn process_listeners(&mut self, config: &Config) -> Result<(), Box<dyn Error>> {
-        let timestamp = self.get_timestamp()?;
+        let logger = Logger::new(&self.z)?;
 
         let listeners_set = listener::retrieve_listeners(&self.http_client, self.live_id)?
             .into_iter()
@@ -527,7 +567,7 @@ impl Spoon {
                         self.previous_listeners_map.get(&e).unwrap().elapsed()
                     )
                 );
-                Self::log(constant::COLOR_GREEN, &c_with_time, &timestamp);
+                logger.log(Some(constant::COLOR_GREEN), &c_with_time);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c_with_time)?;
                     if (config.voicevox.enabled) {
@@ -538,7 +578,7 @@ impl Spoon {
             } else {
                 //unexpected to happen
                 let c = format!("{}さん、また来てね。", e.nickname);
-                Self::log(constant::COLOR_GREEN, &c, &timestamp);
+                logger.log(Some(constant::COLOR_GREEN), &c);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
@@ -553,7 +593,7 @@ impl Spoon {
                 .insert(e.clone(), Instant::now());
             if (self.cumulative_listeners.contains(&e)) {
                 let c = format!("{}さん、おかえりなさい。", e.nickname);
-                Self::log(constant::COLOR_GREEN, &c, &timestamp);
+                logger.log(Some(constant::COLOR_GREEN), &c);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
@@ -563,10 +603,9 @@ impl Spoon {
             } else {
                 self.cumulative_listeners.insert(e.clone());
                 let c = format!("{}さん、いらっしゃい。", e.nickname);
-                Self::log(
-                    constant::COLOR_GREEN,
+                logger.log(
+                    Some(constant::COLOR_GREEN),
                     &format!("{} ({:?})", c, e), //We print `e` itself to trace the unique user id of a troll.
-                    &timestamp,
                 );
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
