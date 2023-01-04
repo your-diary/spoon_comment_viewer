@@ -56,6 +56,8 @@
 
 - [`sox`](https://github.com/chirlu/sox) (BGM再生機能や読み上げ機能を使う場合のみ)
 
+- [`google-speech`](https://pypi.org/project/google-speech/) (英語の読み上げをしたい場合のみ)
+
 ## 2.2 設定
 
 プロジェクト配下の`./config.json`が設定ファイルです。テンプレートが同梱されているので、以下のコマンドでコピーして使ってください。
@@ -114,6 +116,7 @@ $ cp ./config_template.json ./config.json
     "voicevox": {
         "enabled": false,
         "should_skip_non_japanese": true,
+        "should_use_google_speech_for_non_japanese": true,
         "url": "https://api.su-shiki.com/v2/voicevox/audio/",
         "api_key": "z-3_93p-77751-X",
         "speaker": "a8cc6d22-aad0-4ab8-bf1e-2f843924164a",

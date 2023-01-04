@@ -67,6 +67,7 @@ pub struct Selenium {
 pub struct VoiceVox {
     pub enabled: bool,
     pub should_skip_non_japanese: bool,
+    pub should_use_google_speech_for_non_japanese: bool,
     pub url: String,
     pub api_key: String,
     pub speaker: String,
