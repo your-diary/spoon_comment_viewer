@@ -100,9 +100,13 @@ impl Logger {
             self.num_current_listener,
             self.num_total_listener,
             constant::NO_COLOR,
-            color.unwrap_or_default().replace('\n', "\\n"), //makes it a single line
-            s,
-            constant::NO_COLOR,
+            color.unwrap_or_default(),
+            s.replace('\n', "\\n"), //makes it a single line
+            if (color.is_some()) {
+                constant::NO_COLOR
+            } else {
+                ""
+            }
         );
     }
 }
