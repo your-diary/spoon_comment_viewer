@@ -29,6 +29,7 @@ use super::voicevox::VoiceVox;
 
 struct Logger {
     timestamp: String,
+    ranking: String,
     num_spoon: String,
     num_heart: String,
     num_current_listener: String,
@@ -46,22 +47,40 @@ impl Logger {
         }
 
         let count_info_list = z.query_all("ul.count-info-list li")?;
-        if (count_info_list.len() != 4) {
-            return Err(format!(
-                "`count_info_list` is of an unexpected form: {:?}",
-                count_info_list
-            )
-            .into());
+        let mut count_info_list_str = vec![];
+        for e in count_info_list {
+            count_info_list_str.push(e.text()?.trim().to_string());
         }
-        let (num_spoon, num_heart, num_current_listener, num_total_listener) = (
-            count_info_list[0].text()?.trim().to_string(),
-            count_info_list[1].text()?.trim().to_string(),
-            count_info_list[2].text()?.trim().to_string(),
-            count_info_list[3].text()?.trim().to_string(),
+        match count_info_list_str.len() {
+            //followers-only stream (ranking is not shown)
+            4 => {
+                count_info_list_str.insert(0, "?".to_string());
+            }
+            //normal streaming
+            5 => {
+                //do nothing
+            }
+            _ => {
+                error!(
+                    "`count_info_list` is of an unexpected form. Its length is {}.",
+                    count_info_list_str.len()
+                );
+                for _ in 0..(5 - count_info_list_str.len()) {
+                    count_info_list_str.insert(0, "?".to_string());
+                }
+            }
+        }
+        let (ranking, num_spoon, num_heart, num_current_listener, num_total_listener) = (
+            count_info_list_str[0].clone(),
+            count_info_list_str[1].clone(),
+            count_info_list_str[2].clone(),
+            count_info_list_str[3].clone(),
+            count_info_list_str[4].clone(),
         );
 
         Ok(Self {
             timestamp,
+            ranking,
             num_spoon,
             num_heart,
             num_current_listener,
@@ -71,10 +90,11 @@ impl Logger {
 
     fn log(&self, color: Option<&str>, s: &str) {
         println!(
-            "{}[{} ({}) ({}/{}/{}/{})]{}{} {}{}",
+            "{}[{} ({}) ({}/{}/{}/{}/{})]{}{} {}{}",
             constant::COLOR_BLACK,
             Local::now().format("%H:%M:%S"),
             self.timestamp,
+            self.ranking,
             self.num_spoon,
             self.num_heart,
             self.num_current_listener,
