@@ -338,7 +338,7 @@ impl Spoon {
                     {
                         let mut tokens = comment_text.split_whitespace().collect_vec();
                         if (tokens[0] == "/help") {
-                            let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  テキスト」という形で使ってみてね。";
+                            let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  こんにちは」のように使ってみてね。";
                             self.post_comment(s)?;
                             continue;
                         } else if (tokens[0].starts_with('/')) {
