@@ -2,18 +2,20 @@ use std::{
     collections::HashMap,
     fs,
     process::Command,
+    rc::Rc,
     sync::mpsc::{self, Receiver, Sender},
     thread,
     time::{Duration, SystemTime},
 };
 
-use log::error;
+use log::{error, info};
 use reqwest::{
     blocking::{Client, Response},
     StatusCode,
 };
 
 use super::config::Config;
+use super::filter::Filter;
 use super::player::Audio;
 use super::player::AudioEffect;
 use super::player::Player;
@@ -198,10 +200,11 @@ pub struct VoiceVox {
     should_skip_non_japanese: bool,
     should_use_google_speech_for_non_japanese: bool,
     tx: Option<Sender<APIRequest>>,
+    filter: Option<Rc<Filter>>,
 }
 
 impl VoiceVox {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, filter: Rc<Filter>) -> Self {
         if (config.voicevox.enabled) {
             let should_skip_non_japanese = config.voicevox.should_skip_non_japanese;
             let should_use_google_speech_for_non_japanese =
@@ -214,6 +217,7 @@ impl VoiceVox {
                 should_skip_non_japanese,
                 should_use_google_speech_for_non_japanese,
                 tx: Some(tx),
+                filter: None,
             }
         } else {
             Self {
@@ -221,12 +225,17 @@ impl VoiceVox {
                 should_skip_non_japanese: false,
                 should_use_google_speech_for_non_japanese: false,
                 tx: None,
+                filter: Some(filter),
             }
         }
     }
 
     pub fn say(&mut self, script: &str, mut effect: AudioEffect, speaker: usize) {
         if (!self.enabled) {
+            return;
+        }
+        if (!self.filter.as_ref().unwrap().is_normal(script)) {
+            info!("Forbidden word detected: {}", script);
             return;
         }
         if (self.should_skip_non_japanese && !util::is_japanese(script)) {

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::path::Path;
+use std::rc::Rc;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -19,6 +20,7 @@ use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
+use super::filter::Filter;
 use super::listener::{self, Listener};
 use super::player::Audio;
 use super::player::AudioEffect;
@@ -133,8 +135,10 @@ pub struct Spoon {
 
 impl Spoon {
     pub fn new(config: &Config) -> Self {
-        let chatgpt = ChatGPT::new(config);
-        let voicevox = VoiceVox::new(config);
+        let filter = Rc::new(Filter::new(&config.forbidden_words));
+
+        let chatgpt = ChatGPT::new(config, filter.clone());
+        let voicevox = VoiceVox::new(config, filter);
         let player = Player::new();
 
         let z = Selenium::new(

@@ -1,22 +1,26 @@
-use super::config::Config;
-
 use std::env;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::process::{ChildStdin, ChildStdout, Command, Stdio};
+use std::rc::Rc;
+
+use super::config::Config;
+use super::filter::Filter;
 
 pub struct ChatGPT {
     enabled: bool,
     stdin: Option<BufWriter<ChildStdin>>,
     stdout: Option<BufReader<ChildStdout>>,
+    filter: Option<Rc<Filter>>,
 }
 
 impl ChatGPT {
-    pub fn new(config: &Config) -> Self {
+    pub fn new(config: &Config, filter: Rc<Filter>) -> Self {
         if (!config.chatgpt.enabled) {
             Self {
                 enabled: config.chatgpt.enabled,
                 stdin: None,
                 stdout: None,
+                filter: None,
             }
         } else {
             env::set_current_dir(&config.chatgpt.project_dir).unwrap();
@@ -30,12 +34,14 @@ impl ChatGPT {
                 enabled: config.chatgpt.enabled,
                 stdin: Some(BufWriter::new(child.stdin.unwrap())),
                 stdout: Some(BufReader::new(child.stdout.unwrap())),
+                filter: Some(filter),
             }
         }
     }
 
     pub fn complete(&mut self, prompt: &str) -> Option<String> {
         if (self.enabled) {
+            let prompt = self.filter.as_ref().unwrap().sanitize(prompt);
             self.stdin
                 .as_mut()
                 .unwrap()

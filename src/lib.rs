@@ -2,6 +2,7 @@ pub mod chatgpt;
 pub mod comment;
 pub mod config;
 pub mod constant;
+pub mod filter;
 pub mod listener;
 pub mod player;
 pub mod selenium;

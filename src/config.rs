@@ -12,6 +12,7 @@ pub struct Config {
     pub twitter: Twitter,
     pub spoon: Spoon,
     pub selenium: Selenium,
+    pub forbidden_words: Vec<String>,
     pub voicevox: VoiceVox,
     pub chatgpt: ChatGPT,
 }

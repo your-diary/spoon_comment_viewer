@@ -70,7 +70,7 @@ $ cp ./config_template.json ./config.json
 
 `twitter`オブジェクトには、SpoonにログインするためのTwitterのIDとパスワードを設定します。
 
-ハーコメなどの読み上げを有効にしたい場合は`voicevox`オブジェクトを設定します。読み上げには[WEB版VOICEVOX API](https://voicevox.su-shiki.com/su-shikiapis/)が使用されます。
+ハーコメなどの読み上げを有効にしたい場合は`voicevox`オブジェクトを設定します。読み上げには[WEB版VOICEVOX API](https://voicevox.su-shiki.com/su-shikiapis/)が使用されます。読み上げなどの際の禁止ワードは`forbidden_words`配列で設定することができます。
 
 それ以外の設定はデフォルト値のままで大丈夫です。
 
@@ -113,6 +113,7 @@ $ cp ./config_template.json ./config.json
         "implicit_timeout_ms": 5000,
         "should_maximize_window": false
     },
+    "forbidden_words": [],
     "voicevox": {
         "enabled": false,
         "should_skip_non_japanese": true,

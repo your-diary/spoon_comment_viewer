@@ -36,6 +36,7 @@
         "implicit_timeout_ms": 5000,
         "should_maximize_window": false
     },
+    "forbidden_words": [],
     "voicevox": {
         "enabled": false,
         "should_skip_non_japanese": true,
