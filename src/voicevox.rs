@@ -103,7 +103,13 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
             let res: Response = match client.get(&config.url).query(&params).send() {
                 Err(e) => {
-                    error!("Failed to send the request: {}", e);
+                    if (e.is_timeout()) {
+                        error!("VOICEVOX API timed out.");
+                    } else if (e.is_connect()) {
+                        error!("Failed to connect to VOICEVOX API.");
+                    } else {
+                        error!("Failed to send the request: {}", e);
+                    }
                     continue;
                 }
                 Ok(r) => r,
@@ -126,13 +132,18 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
                             "`403 Forbidden` is returned from VOICEVOX API. This may be temporary."
                         );
                     }
+                    StatusCode::SERVICE_UNAVAILABLE => {
+                        error!(
+                            "`503 Service Unavailable` is returned from VOICEVOX API. This may be temporary."
+                        );
+                    }
                     _ => {
                         let body = res.text().unwrap_or_default();
                         if (body.contains("notEnoughPoints")) {
-                            error!(
-                            "`notEnoughPoints` is returned from VOICEVOX API. Thread terminated."
-                        );
+                            error!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
                             return;
+                        } else if (body.contains(r#""errorMessage": "failed""#)) {
+                            error!("`failed` is returned from VOICEVOX API. This is expected to randomly occur.");
                         } else {
                             error!("Unknown error is returned from VOICEVOX API: {{ status: {}, body: {} }}", response_status, body);
                         }
