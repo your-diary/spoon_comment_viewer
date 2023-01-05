@@ -24,13 +24,15 @@ use super::util;
 struct APIRequest {
     script: String,
     effect: AudioEffect,
+    speaker: usize,
 }
 
 impl APIRequest {
-    fn new(script: &str, effect: AudioEffect) -> Self {
+    fn new(script: &str, effect: AudioEffect, speaker: usize) -> Self {
         Self {
             script: script.to_string(),
             effect,
+            speaker,
         }
     }
 }
@@ -95,7 +97,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         //for Japanese
         } else {
             let mut params = HashMap::new();
-            let speaker = config.speaker.to_string();
+            let speaker = req.speaker.to_string();
             let speed = config.speed.to_string();
             params.insert("key", &config.api_key);
             params.insert("speaker", &speaker);
@@ -223,7 +225,7 @@ impl VoiceVox {
         }
     }
 
-    pub fn say(&mut self, script: &str, mut effect: AudioEffect) {
+    pub fn say(&mut self, script: &str, mut effect: AudioEffect, speaker: usize) {
         if (!self.enabled) {
             return;
         }
@@ -234,7 +236,7 @@ impl VoiceVox {
                 return;
             }
         }
-        let req = APIRequest::new(script, effect);
+        let req = APIRequest::new(script, effect, speaker);
         if let Err(e) = self.tx.as_ref().unwrap().send(req) {
             error!("{}", e);
             self.enabled = false;

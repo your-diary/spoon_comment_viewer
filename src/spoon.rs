@@ -329,11 +329,12 @@ impl Spoon {
 
                     let mut comment_text = comment.text().to_string();
                     let mut effect = AudioEffect::default();
+                    let mut speaker = config.voicevox.speaker;
                     if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
                     {
                         let mut tokens = comment_text.split_whitespace().collect_vec();
                         if (tokens[0] == "/help") {
-                            let s = "[ヘルプ]\n`echo`, `high`, `low`, `fast`, `slow` のどれかを `/echo テキスト` という形で使ってみてね。";
+                            let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  テキスト」という形で使ってみてね。";
                             self.post_comment(s)?;
                             continue;
                         } else if (tokens[0].starts_with('/')) {
@@ -346,6 +347,9 @@ impl Spoon {
                                 "/right" => effect.right = true, //low quality on Linux
                                 "/fast" => effect.fast = true,
                                 "/slow" => effect.slow = true,
+                                "/zundamon" => speaker = 3,
+                                "/asmr" => speaker = 22,
+                                "/sayo" => speaker = 46,
                                 _ => {
                                     let s = format!(
                                         "`{}`は無効なコマンドだよ。`/help`で確認してね。",
@@ -362,7 +366,7 @@ impl Spoon {
                                 );
                                 self.post_comment(&s)?;
                                 if (config.voicevox.enabled) {
-                                    self.voicevox.say(&s, AudioEffect::default());
+                                    self.voicevox.say(&s, AudioEffect::default(), speaker);
                                 }
                                 continue;
                             }
@@ -381,7 +385,7 @@ impl Spoon {
                                 self.post_comment(&s.join(""))?;
                             }
                             if (config.voicevox.enabled) {
-                                self.voicevox.say(s, effect);
+                                self.voicevox.say(s, effect, speaker);
                             }
                         }
                     }
@@ -401,7 +405,8 @@ impl Spoon {
                     {
                         self.post_comment(&c)?;
                         if (config.voicevox.enabled) {
-                            self.voicevox.say(&c, AudioEffect::default());
+                            self.voicevox
+                                .say(&c, AudioEffect::default(), config.voicevox.speaker);
                         }
                     }
 
@@ -410,13 +415,18 @@ impl Spoon {
                         let c = "点呼するよ。";
                         self.post_comment(c)?;
                         if (config.voicevox.enabled) {
-                            self.voicevox.say(c, AudioEffect::default());
+                            self.voicevox
+                                .say(c, AudioEffect::default(), config.voicevox.speaker);
                         }
                         for listener in &self.previous_listeners_set {
                             let c = format!("{}さん、来てくれてありがとう。", listener.nickname);
                             self.post_comment(&c)?;
                             if (config.voicevox.enabled) {
-                                self.voicevox.say(&c, AudioEffect::default());
+                                self.voicevox.say(
+                                    &c,
+                                    AudioEffect::default(),
+                                    config.voicevox.speaker,
+                                );
                             }
                         }
                     }
@@ -437,6 +447,7 @@ impl Spoon {
                                     reverb: true,
                                     ..Default::default()
                                 },
+                                config.voicevox.speaker,
                             );
                         }
                     }
@@ -479,6 +490,7 @@ impl Spoon {
                                                 reverb: true,
                                                 ..Default::default()
                                             },
+                                            config.voicevox.speaker,
                                         );
                                     }
                                 }
@@ -514,6 +526,7 @@ impl Spoon {
                                                 reverb: true,
                                                 ..Default::default()
                                             },
+                                            config.voicevox.speaker,
                                         );
                                     }
                                 }
@@ -544,6 +557,7 @@ impl Spoon {
                                                 reverb: true,
                                                 ..Default::default()
                                             },
+                                            config.voicevox.speaker,
                                         );
                                     }
                                 }
@@ -558,7 +572,8 @@ impl Spoon {
                     if (config.spoon.should_comment_block) {
                         self.post_comment(&c)?;
                         if (config.voicevox.enabled) {
-                            self.voicevox.say(&c, AudioEffect::default());
+                            self.voicevox
+                                .say(&c, AudioEffect::default(), config.voicevox.speaker);
                         }
                     }
                 }
@@ -595,7 +610,8 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c_with_time)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(&c, AudioEffect::default());
+                        self.voicevox
+                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
                     }
                 }
                 self.previous_listeners_map.remove(&e);
@@ -606,7 +622,8 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(&c, AudioEffect::default());
+                        self.voicevox
+                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
                     }
                 }
             }
@@ -621,7 +638,8 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(&c, AudioEffect::default());
+                        self.voicevox
+                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
                     }
                 }
             } else {
@@ -634,7 +652,8 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(&c, AudioEffect::default());
+                        self.voicevox
+                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
                     }
                 }
             }
@@ -658,7 +677,8 @@ impl Spoon {
         if (!s.is_empty()) {
             self.post_comment(&s)?;
             if (config.voicevox.enabled) {
-                self.voicevox.say(&s, AudioEffect::default());
+                self.voicevox
+                    .say(&s, AudioEffect::default(), config.voicevox.speaker);
             }
         }
         Ok(())
