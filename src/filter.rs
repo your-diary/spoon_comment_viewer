@@ -2,6 +2,7 @@ pub struct Filter {
     forbidden_words: Vec<String>,
 }
 
+//filters out forbidden words from input string
 impl Filter {
     pub fn new(forbidden_words: &[String]) -> Self {
         Self {

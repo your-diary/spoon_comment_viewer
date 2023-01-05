@@ -3,6 +3,8 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::process::{ChildStdin, ChildStdout, Command, Stdio};
 use std::rc::Rc;
 
+use log::info;
+
 use super::config::Config;
 use super::filter::Filter;
 
@@ -41,7 +43,18 @@ impl ChatGPT {
 
     pub fn complete(&mut self, prompt: &str) -> Option<String> {
         if (self.enabled) {
-            let prompt = self.filter.as_ref().unwrap().sanitize(prompt);
+            let filter = self.filter.as_ref().unwrap();
+            let prompt = if (filter.is_normal(prompt)) {
+                prompt.to_string()
+            } else {
+                let original = prompt.to_string();
+                let sanitized = filter.sanitize(prompt);
+                info!(
+                    "Forbidden word sanitized: [{}] -> [{}]",
+                    original, sanitized
+                );
+                sanitized
+            };
             self.stdin
                 .as_mut()
                 .unwrap()
