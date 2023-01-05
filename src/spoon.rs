@@ -258,8 +258,12 @@ impl Spoon {
     }
 
     fn post_comment(&self, s: &str) -> Result<(), WebDriverError> {
-        self.z.input("textarea", s)?;
-        self.z.click("button[title='送信']")?;
+        //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
+        for mut s in s.chars().chunks(100).into_iter() {
+            let s = s.join("");
+            self.z.input("textarea", &s)?;
+            self.z.click("button[title='送信']")?;
+        }
         Ok(())
     }
 
@@ -380,10 +384,7 @@ impl Spoon {
                             .complete(&comment_text.split_whitespace().join(" "))
                         {
                             let s = s.trim();
-                            //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
-                            for mut s in s.chars().chunks(100).into_iter() {
-                                self.post_comment(&s.join(""))?;
-                            }
+                            self.post_comment(s)?;
                             if (config.voicevox.enabled) {
                                 self.voicevox.say(s, effect, speaker);
                             }
