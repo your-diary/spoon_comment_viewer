@@ -70,7 +70,7 @@ pub struct VoiceVox {
     pub should_use_google_speech_for_non_japanese: bool,
     pub url: String,
     pub api_key: String,
-    pub speaker: String,
+    pub speaker: usize,
     pub speed: f64,
     pub output_dir: String,
     pub timeout_sec: u64,

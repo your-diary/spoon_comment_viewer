@@ -95,9 +95,10 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         //for Japanese
         } else {
             let mut params = HashMap::new();
+            let speaker = config.speaker.to_string();
             let speed = config.speed.to_string();
             params.insert("key", &config.api_key);
-            params.insert("speaker", &config.speaker);
+            params.insert("speaker", &speaker);
             params.insert("speed", &speed);
             params.insert("text", &req.script);
 

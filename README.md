@@ -119,7 +119,7 @@ $ cp ./config_template.json ./config.json
         "should_use_google_speech_for_non_japanese": true,
         "url": "https://api.su-shiki.com/v2/voicevox/audio/",
         "api_key": "z-3_93p-77751-X",
-        "speaker": "a8cc6d22-aad0-4ab8-bf1e-2f843924164a",
+        "speaker": 0,
         "speed": 1.0,
         "output_dir": "./wav",
         "timeout_sec": 10
