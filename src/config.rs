@@ -58,6 +58,7 @@ pub struct BGM {
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Audio {
+    pub title: String,
     pub path: String,
     pub volume: f64,
 }

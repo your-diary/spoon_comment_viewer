@@ -1,5 +1,5 @@
 use std::process::Command;
-use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
 use super::player::Audio;
@@ -18,7 +18,7 @@ fn bgm_thread(rx: Receiver<Audio>, audio: Audio) {
 }
 
 pub struct BGM {
-    tx: Option<SyncSender<Audio>>,
+    tx: Option<Sender<Audio>>,
 }
 
 impl BGM {
@@ -29,17 +29,17 @@ impl BGM {
 
     pub fn start(&mut self, audio: &Audio) {
         assert!(self.tx.is_none());
-        let (tx, rx) = mpsc::sync_channel(0);
+        let (tx, rx) = mpsc::channel();
         let audio: Audio = audio.clone();
         thread::spawn(move || bgm_thread(rx, audio));
         self.tx = Some(tx);
     }
 
-    pub fn push(&self, audio: &Audio) -> bool {
+    pub fn push(&self, audio: &Audio) {
         if (self.tx.is_none()) {
-            return false;
+            return;
         }
-        self.tx.as_ref().unwrap().try_send(audio.clone()).is_ok()
+        self.tx.as_ref().unwrap().send(audio.clone()).unwrap();
     }
 }
 
@@ -58,7 +58,7 @@ mod tests {
     // #[ignore]
     fn test01() {
         let bgm = BGM::new();
-        assert_eq!(false, bgm.push(&Audio::new("", 1., Default::default())));
+        bgm.push(&Audio::new("", 1., Default::default()));
     }
 
     #[test]
@@ -72,22 +72,11 @@ mod tests {
             Default::default(),
         ));
         std::thread::sleep(std::time::Duration::from_millis(5000));
-        assert_eq!(
-            true,
-            bgm.push(&Audio::new(
-                "./test_assets/short.mp3",
-                1.,
-                Default::default(),
-            ))
-        );
-        assert_eq!(
-            false,
-            bgm.push(&Audio::new(
-                "./test_assets/short.mp3",
-                1.,
-                Default::default(),
-            ))
-        );
+        bgm.push(&Audio::new(
+            "./test_assets/short.mp3",
+            1.,
+            Default::default(),
+        ));
         std::thread::sleep(std::time::Duration::from_millis(12000));
         std::thread::sleep(std::time::Duration::from_millis(3000));
     }

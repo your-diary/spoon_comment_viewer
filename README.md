@@ -105,6 +105,7 @@ $ cp ./config_template.json ./config.json
                 "enabled": false,
                 "audio_list": [
                     {
+                        "title": "piano",
                         "path": "~/Music/bgm/piano.mp3",
                         "volume": 0.03
                     }

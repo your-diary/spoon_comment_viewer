@@ -9,6 +9,8 @@ use std::time::Instant;
 use chrono::Local;
 use itertools::Itertools;
 use log::error;
+use rand::prelude::SliceRandom;
+use rand::rngs::ThreadRng;
 use regex::Regex;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
@@ -114,6 +116,8 @@ impl Logger {
 }
 
 pub struct Spoon {
+    rng: ThreadRng,
+
     chatgpt: ChatGPT,
     voicevox: VoiceVox,
     bgm: BGM,
@@ -148,6 +152,7 @@ impl Spoon {
         );
 
         Self {
+            rng: rand::thread_rng(),
             chatgpt,
             voicevox,
             bgm,
@@ -338,59 +343,79 @@ impl Spoon {
                     let mut comment_text = comment.text().to_string();
                     let mut effect = AudioEffect::default();
                     let mut speaker = config.voicevox.speaker;
-                    if (config.chatgpt.enabled && (comment.user() != config.chatgpt.excluded_user))
-                    {
+                    if (comment.user() != config.chatgpt.excluded_user) {
                         let mut tokens = comment_text.split_whitespace().collect_vec();
-                        if (tokens[0] == "/help") {
-                            let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  こんにちは」のように使ってみてね。";
-                            self.post_comment(s)?;
-                            continue;
-                        } else if (tokens[0].starts_with('/')) {
-                            match tokens[0] {
-                                "/reverb" => effect.reverb = true,
-                                "/echo" => effect.reverb = true, //same as `/reverb`
-                                "/high" => effect.high = true,
-                                "/low" => effect.low = true,
-                                "/left" => effect.left = true, //low quality on Linux
-                                "/right" => effect.right = true, //low quality on Linux
-                                "/fast" => effect.fast = true,
-                                "/slow" => effect.slow = true,
-                                "/zundamon" => speaker = 3,
-                                "/asmr" => speaker = 22,
-                                "/sayo" => speaker = 46,
-                                _ => {
-                                    let s = format!(
-                                        "`{}`は無効なコマンドだよ。`/help`で確認してね。",
-                                        tokens[0]
-                                    );
-                                    self.post_comment(&s)?;
-                                    continue;
-                                }
-                            }
-                            if (tokens.len() == 1) {
-                                let s = format!(
-                                    "`{}`単体では使用できないよ。`/help`で確認してね。",
-                                    tokens[0]
-                                );
-                                self.post_comment(&s)?;
+                        if (tokens[0] == "/bgm") {
+                            if (config.spoon.live.bgm.audio_list.len() <= 1) {
+                                let s = "BGMの再生に失敗しました。";
+                                self.post_comment(s)?;
                                 if (config.voicevox.enabled) {
-                                    self.voicevox.say(&s, AudioEffect::default(), speaker);
+                                    self.voicevox.say(s, AudioEffect::default(), speaker);
                                 }
                                 continue;
                             }
-                            tokens.remove(0);
-                            comment_text = tokens.join(" ");
-                        }
-
-                        //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
-                        if let Some(s) = self
-                            .chatgpt
-                            .complete(&comment_text.split_whitespace().join(" "))
-                        {
-                            let s = s.trim();
-                            self.post_comment(s)?;
+                            let audio_list = &config.spoon.live.bgm.audio_list[1..];
+                            let bgm = audio_list.choose(&mut self.rng).unwrap();
+                            let audio = Audio::new(&bgm.path, bgm.volume, AudioEffect::default());
+                            self.bgm.push(&audio);
+                            let s =
+                                format!("再生予定のBGMリストに[ {} ]を追加しました。", bgm.title);
+                            self.post_comment(&s)?;
                             if (config.voicevox.enabled) {
-                                self.voicevox.say(s, effect, speaker);
+                                self.voicevox.say(&s, AudioEffect::default(), speaker);
+                            }
+                        } else if (config.chatgpt.enabled) {
+                            if (tokens[0] == "/help") {
+                                let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  こんにちは」のように使ってみてね。";
+                                self.post_comment(s)?;
+                                continue;
+                            } else if (tokens[0].starts_with('/')) {
+                                match tokens[0] {
+                                    "/reverb" => effect.reverb = true,
+                                    "/echo" => effect.reverb = true, //same as `/reverb`
+                                    "/high" => effect.high = true,
+                                    "/low" => effect.low = true,
+                                    "/left" => effect.left = true, //low quality on Linux
+                                    "/right" => effect.right = true, //low quality on Linux
+                                    "/fast" => effect.fast = true,
+                                    "/slow" => effect.slow = true,
+                                    "/zundamon" => speaker = 3,
+                                    "/asmr" => speaker = 22,
+                                    "/sayo" => speaker = 46,
+                                    _ => {
+                                        let s = format!(
+                                            "`{}`は無効なコマンドだよ。`/help`で確認してね。",
+                                            tokens[0]
+                                        );
+                                        self.post_comment(&s)?;
+                                        continue;
+                                    }
+                                }
+                                if (tokens.len() == 1) {
+                                    let s = format!(
+                                        "`{}`単体では使用できないよ。`/help`で確認してね。",
+                                        tokens[0]
+                                    );
+                                    self.post_comment(&s)?;
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(&s, AudioEffect::default(), speaker);
+                                    }
+                                    continue;
+                                }
+                                tokens.remove(0);
+                                comment_text = tokens.join(" ");
+                            }
+
+                            //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
+                            if let Some(s) = self
+                                .chatgpt
+                                .complete(&comment_text.split_whitespace().join(" "))
+                            {
+                                let s = s.trim();
+                                self.post_comment(s)?;
+                                if (config.voicevox.enabled) {
+                                    self.voicevox.say(s, effect, speaker);
+                                }
                             }
                         }
                     }
