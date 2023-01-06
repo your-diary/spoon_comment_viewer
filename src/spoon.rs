@@ -359,7 +359,7 @@ impl Spoon {
                             let audio = Audio::new(&bgm.path, bgm.volume, AudioEffect::default());
                             self.bgm.push(&audio);
                             let s =
-                                format!("再生予定のBGMリストに[ {} ]を追加しました。", bgm.title);
+                                format!("再生予定のBGMリストに [ {} ] を追加しました。", bgm.title);
                             self.post_comment(&s)?;
                             if (config.voicevox.enabled) {
                                 self.voicevox.say(&s, AudioEffect::default(), speaker);
