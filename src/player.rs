@@ -4,7 +4,7 @@ use log::error;
 
 /*-------------------------------------*/
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct AudioEffect {
     pub reverb: bool,
     pub high: bool,
@@ -20,7 +20,7 @@ pub struct AudioEffect {
 
 /*-------------------------------------*/
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Audio {
     path: String,
     volume: f64,
@@ -64,7 +64,7 @@ impl Player {
         self.children.iter().for_each(|e| {
             let _ = Command::new("kill")
                 .args(["-SIGTSTP", &e.id().to_string()])
-                .status();
+                .output();
         });
     }
 
@@ -72,12 +72,16 @@ impl Player {
         self.children.iter().for_each(|e| {
             let _ = Command::new("kill")
                 .args(["-SIGCONT", &e.id().to_string()])
-                .status();
+                .output();
         });
     }
 
     fn play(&mut self, audio: &Audio, is_async: bool) {
-        let mut args = vec![format!("-v {}", audio.volume), audio.path.clone()];
+        let mut args = vec![
+            "-v".to_string(),
+            audio.volume.to_string(),
+            audio.path.clone(),
+        ];
 
         //applies audio effects
         {
@@ -130,9 +134,13 @@ impl Player {
             if (is_async) {
                 self.children.push(c);
             } else {
-                #[allow(clippy::collapsible_else_if)]
-                if let Err(e) = c.wait() {
-                    error!("Failed to play the audio: {}", e);
+                match c.wait() {
+                    Ok(r) => {
+                        if (!r.success()) {
+                            error!("Non-zero exit status is returned from `play`: {:?}", r);
+                        }
+                    }
+                    Err(e) => error!("Failed to play the audio: {}", e),
                 }
             }
         }
@@ -144,6 +152,28 @@ impl Drop for Player {
         self.children.iter_mut().for_each(|e| {
             let _ = e.kill();
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    // #[ignore]
+    fn test01() {
+        let mut player = Player::new();
+        player.play_async(&Audio::new(
+            "./test_assets/long.mp3",
+            1.,
+            Default::default(),
+        ));
+        player.play_async(&Audio::new(
+            "./test_assets/short.mp3",
+            1.,
+            Default::default(),
+        ));
+        std::thread::sleep(std::time::Duration::from_millis(3000));
     }
 }
 

@@ -1,3 +1,4 @@
+use std::process::Command;
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::thread;
 
@@ -6,6 +7,7 @@ use super::player::Player;
 
 fn bgm_thread(rx: Receiver<Audio>, audio: Audio) {
     let mut player = Player::new();
+    std::thread::sleep(std::time::Duration::from_millis(100)); //for unknown reason, without this, the following `play_async()` silently failed
     player.play_async(&audio);
     loop {
         let audio: Audio = rx.recv().unwrap();
@@ -38,5 +40,55 @@ impl BGM {
             return false;
         }
         self.tx.as_ref().unwrap().try_send(audio.clone()).is_ok()
+    }
+}
+
+//HACK: This is dirty, but it cannot be helped as `Player::drop()` isn't called in another thread (i.e. `bgm_thread()`).
+impl Drop for BGM {
+    fn drop(&mut self) {
+        let _ = Command::new("killall").args(["play"]).output();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    // #[ignore]
+    fn test01() {
+        let bgm = BGM::new();
+        assert_eq!(false, bgm.push(&Audio::new("", 1., Default::default())));
+    }
+
+    #[test]
+    // #[ignore]
+    fn test02() {
+        env_logger::init();
+        let mut bgm = BGM::new();
+        bgm.start(&Audio::new(
+            "./test_assets/long.mp3",
+            1.,
+            Default::default(),
+        ));
+        std::thread::sleep(std::time::Duration::from_millis(5000));
+        assert_eq!(
+            true,
+            bgm.push(&Audio::new(
+                "./test_assets/short.mp3",
+                1.,
+                Default::default(),
+            ))
+        );
+        assert_eq!(
+            false,
+            bgm.push(&Audio::new(
+                "./test_assets/short.mp3",
+                1.,
+                Default::default(),
+            ))
+        );
+        std::thread::sleep(std::time::Duration::from_millis(12000));
+        std::thread::sleep(std::time::Duration::from_millis(3000));
     }
 }
