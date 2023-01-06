@@ -217,7 +217,7 @@ impl VoiceVox {
                 should_skip_non_japanese,
                 should_use_google_speech_for_non_japanese,
                 tx: Some(tx),
-                filter: None,
+                filter: Some(filter),
             }
         } else {
             Self {
@@ -225,7 +225,7 @@ impl VoiceVox {
                 should_skip_non_japanese: false,
                 should_use_google_speech_for_non_japanese: false,
                 tx: None,
-                filter: Some(filter),
+                filter: None,
             }
         }
     }
