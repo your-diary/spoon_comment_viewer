@@ -17,8 +17,6 @@ pub struct Listener {
 }
 
 //retrieves the list of the names of current listeners
-//
-//TODO: Currently, at most 34 listeners can be retrieved as we don't perform a paged call.
 pub fn retrieve_listeners(
     http_client: &Client,
     live_id: u64,
