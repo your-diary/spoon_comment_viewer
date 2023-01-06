@@ -235,7 +235,7 @@ impl VoiceVox {
             return;
         }
         if (!self.filter.as_ref().unwrap().is_normal(script)) {
-            info!("Forbidden word detected: {}", script);
+            info!("Forbidden word detected: [{}]", script);
             return;
         }
         if (self.should_skip_non_japanese && !util::is_japanese(script)) {
