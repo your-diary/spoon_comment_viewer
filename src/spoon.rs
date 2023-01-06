@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::path::Path;
 use std::rc::Rc;
+use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -412,9 +413,20 @@ impl Spoon {
                                 .complete(&comment_text.split_whitespace().join(" "))
                             {
                                 let s = s.trim();
-                                self.post_comment(s)?;
-                                if (config.voicevox.enabled) {
-                                    self.voicevox.say(s, effect, speaker);
+                                if (s == "QUOTA_ERROR") {
+                                    let s = "AI部分にエラーが発生しました。管理人に通知を送信しました。一分後、枠を終了します。申し訳ございません。";
+                                    self.post_comment(s)?;
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(s, effect, speaker);
+                                    }
+                                    thread::sleep(Duration::from_secs(60));
+                                    let _ = self.z.driver().close();
+                                    thread::sleep(Duration::from_secs(60 * 60 * 24));
+                                } else {
+                                    self.post_comment(s)?;
+                                    if (config.voicevox.enabled) {
+                                        self.voicevox.say(s, effect, speaker);
+                                    }
                                 }
                             }
                         }
