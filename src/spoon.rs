@@ -231,8 +231,8 @@ impl Spoon {
         //bgm
         if (live.bgm.enabled) {
             self.bgm.start(&Audio::new(
-                &live.bgm.path,
-                live.bgm.volume,
+                &live.bgm.audio_list[0].path,
+                live.bgm.audio_list[0].volume,
                 AudioEffect {
                     repeat: true,
                     ..Default::default()

@@ -103,8 +103,12 @@ $ cp ./config_template.json ./config.json
             "bg_image": "~/Downloads/bg.png",
             "bgm": {
                 "enabled": false,
-                "path": "~/Music/bgm/piano.mp3",
-                "volume": 0.03
+                "audio_list": [
+                    {
+                        "path": "~/Music/bgm/piano.mp3",
+                        "volume": 0.03
+                    }
+                ]
             }
         }
     },

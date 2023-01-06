@@ -53,6 +53,11 @@ pub struct Live {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct BGM {
     pub enabled: bool,
+    pub audio_list: Vec<Audio>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct Audio {
     pub path: String,
     pub volume: f64,
 }
@@ -101,7 +106,9 @@ impl Config {
         util::canonicalize_path_in_place(&mut ret.chatgpt.project_dir);
         util::canonicalize_path_in_place(&mut ret.spoon.message_tunnel_file);
         util::canonicalize_path_in_place(&mut ret.spoon.live.bg_image);
-        util::canonicalize_path_in_place(&mut ret.spoon.live.bgm.path);
+        ret.spoon.live.bgm.audio_list.iter_mut().for_each(|e| {
+            util::canonicalize_path_in_place(&mut e.path);
+        });
         util::canonicalize_path_in_place(&mut ret.voicevox.output_dir);
         assert!(ret.spoon.live.tags.len() <= 5);
         ret
