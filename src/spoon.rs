@@ -15,6 +15,7 @@ use thirtyfour_sync::error::WebDriverError;
 use thirtyfour_sync::ElementId;
 use thirtyfour_sync::WebDriverCommands;
 
+use super::bgm::BGM;
 use super::chatgpt::ChatGPT;
 use super::comment::Comment;
 use super::comment::CommentType;
@@ -24,7 +25,6 @@ use super::filter::Filter;
 use super::listener::{self, Listener};
 use super::player::Audio;
 use super::player::AudioEffect;
-use super::player::Player;
 use super::selenium::Selenium;
 use super::util;
 use super::voicevox::VoiceVox;
@@ -116,7 +116,7 @@ impl Logger {
 pub struct Spoon {
     chatgpt: ChatGPT,
     voicevox: VoiceVox,
-    player: Player,
+    bgm: BGM,
     z: Selenium,
 
     //comments
@@ -139,7 +139,7 @@ impl Spoon {
 
         let chatgpt = ChatGPT::new(config, filter.clone());
         let voicevox = VoiceVox::new(config, filter);
-        let player = Player::new();
+        let bgm = BGM::new();
 
         let z = Selenium::new(
             config.selenium.webdriver_port,
@@ -150,7 +150,7 @@ impl Spoon {
         Self {
             chatgpt,
             voicevox,
-            player,
+            bgm,
             z,
 
             comment_set: HashSet::new(),
@@ -230,7 +230,7 @@ impl Spoon {
 
         //bgm
         if (live.bgm.enabled) {
-            self.player.play_async(&Audio::new(
+            self.bgm.start(&Audio::new(
                 &live.bgm.path,
                 live.bgm.volume,
                 AudioEffect {

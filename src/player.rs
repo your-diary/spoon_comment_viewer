@@ -4,7 +4,7 @@ use log::error;
 
 /*-------------------------------------*/
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct AudioEffect {
     pub reverb: bool,
     pub high: bool,
@@ -20,6 +20,7 @@ pub struct AudioEffect {
 
 /*-------------------------------------*/
 
+#[derive(Clone)]
 pub struct Audio {
     path: String,
     volume: f64,
@@ -57,6 +58,22 @@ impl Player {
 
     pub fn play_sync(&mut self, audio: &Audio) {
         self.play(audio, false);
+    }
+
+    pub fn pause(&mut self) {
+        self.children.iter().for_each(|e| {
+            let _ = Command::new("kill")
+                .args(["-SIGTSTP", &e.id().to_string()])
+                .status();
+        });
+    }
+
+    pub fn unpause(&mut self) {
+        self.children.iter().for_each(|e| {
+            let _ = Command::new("kill")
+                .args(["-SIGCONT", &e.id().to_string()])
+                .status();
+        });
     }
 
     fn play(&mut self, audio: &Audio, is_async: bool) {

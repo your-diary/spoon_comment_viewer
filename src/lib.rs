@@ -1,3 +1,4 @@
+pub mod bgm;
 pub mod chatgpt;
 pub mod comment;
 pub mod config;
