@@ -40,7 +40,7 @@
 
 問い合わせ先: [@ynn_diary](https://twitter.com/ynn_diary)
 
-| [![](./readme_assets/demo.png)](https://www.youtube.com/watch?v=mWLUacHuatY) |
+| [![](./readme_assets/demo.png)](https://www.youtube.com/watch?v=licMCKRp2yY) |
 | :-: |
 | デモ動画 (YouTube) |
 
