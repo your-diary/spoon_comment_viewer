@@ -182,7 +182,7 @@ impl Spoon {
     ) -> Result<(), WebDriverError> {
         self.z.driver().get(url)?;
 
-        self.z.click(".btn-login")?;
+        self.z.click("button[title='ログイン / 会員登録']")?;
         self.z.click(".btn-twitter button")?;
 
         self.z.switch_tab(1)?;
