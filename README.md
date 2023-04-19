@@ -138,7 +138,7 @@ $ cp ./config_template.json ./config.json
 }
 ```
 
-<sub>(`chatgpt`オブジェクトについてはundocumentedですが、Rustで書かれていてかつ対話的なChatGPTクライアントのRustプロジェクトを`chatgpt.project_dir`フィールドに指定すれば、リスナーのコメントに対してChatGPTで自動返信することができます。クライアントはどこかで公開されているわけではなく、各自で実装する必要があります。)</sub>
+<sub>(`chatgpt`オブジェクトについてはundocumentedですが、Rustで書かれていてかつ対話的なChatGPTクライアントのRustプロジェクトを`chatgpt.project_dir`フィールドに指定すれば、リスナーのコメントに対してChatGPTで自動返信することができます。クライアントは任意ですが、例えば[`your-diary/chatgpt`](https://github.com/your-diary/chatgpt)を使用できます。)</sub>
 
 ## 2.3 実行
 
