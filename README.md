@@ -40,6 +40,10 @@
 
 問い合わせ先: [@ynn_diary](https://twitter.com/ynn_diary)
 
+| [![](./readme_assets/slide.png)](https://docs.google.com/presentation/d/e/2PACX-1vRCVsntZ1XfYmA4_FeDX5IDfL86V172E7v497kSc5AjzB7_S-o1cKMxHJtD4qsgIIoB8tqaR46qaLI-/pub?start=false&loop=false&delayms=3000) |
+| :-: |
+| 応用プロジェクトの説明スライド (Google Slides) |
+
 | [![](./readme_assets/demo.png)](https://www.youtube.com/watch?v=licMCKRp2yY) |
 | :-: |
 | デモ動画 (YouTube) |
