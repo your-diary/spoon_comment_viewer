@@ -1,18 +1,20 @@
+use std::time::Duration;
+
 use rusqlite::{params, Connection, Statement};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-struct ListenerEntity {
+pub struct ListenerEntity {
     id: usize,
-    visit_count: usize,
-    stay_duration_sec: usize,
+    pub visit_count: usize,
+    pub stay_duration: Duration,
 }
 
 impl ListenerEntity {
-    fn new(id: usize, visit_count: usize, stay_duration_sec: usize) -> ListenerEntity {
+    fn new(id: usize, visit_count: usize, stay_duration: Duration) -> ListenerEntity {
         ListenerEntity {
             id,
             visit_count,
-            stay_duration_sec,
+            stay_duration,
         }
     }
 }
@@ -47,7 +49,7 @@ impl Database {
                     "CREATE TABLE {} (
               id                INTEGER PRIMARY KEY,
               visit_count       INTEGER,
-              stay_duration_sec INTEGER
+              stay_duration INTEGER
         )",
                     self.table_name
                 ),
@@ -56,31 +58,39 @@ impl Database {
             .unwrap();
     }
 
-    fn insert(&self, entity: ListenerEntity) {
+    pub fn insert(&self, entity: ListenerEntity) {
         self.conn
             .execute(
                 &format!(
-                    "INSERT INTO {} (id, visit_count, stay_duration_sec) VALUES (?, ?, ?);",
+                    "INSERT INTO {} (id, visit_count, stay_duration) VALUES (?, ?, ?);",
                     self.table_name
                 ),
-                params![entity.id, entity.visit_count, entity.stay_duration_sec,],
+                params![
+                    entity.id,
+                    entity.visit_count,
+                    entity.stay_duration.as_secs(),
+                ],
             )
             .unwrap();
     }
 
-    fn update(&self, entity: ListenerEntity) {
+    pub fn update(&self, entity: ListenerEntity) {
         self.conn
             .execute(
                 &format!(
-                    "UPDATE {} SET visit_count = ?, stay_duration_sec = ? WHERE id = ?;",
+                    "UPDATE {} SET visit_count = ?, stay_duration = ? WHERE id = ?;",
                     self.table_name
                 ),
-                params![entity.visit_count, entity.stay_duration_sec, entity.id,],
+                params![
+                    entity.visit_count,
+                    entity.stay_duration.as_secs(),
+                    entity.id,
+                ],
             )
             .unwrap();
     }
 
-    fn select_by_id(&self, id: usize) -> Option<ListenerEntity> {
+    pub fn select_by_id(&self, id: usize) -> Option<ListenerEntity> {
         let mut statement: Statement = self
             .conn
             .prepare(&format!("SELECT * FROM {} WHERE id = ?;", self.table_name))
@@ -90,7 +100,7 @@ impl Database {
                 Ok(ListenerEntity::new(
                     r.get(0).unwrap(),
                     r.get(1).unwrap(),
-                    r.get(2).unwrap(),
+                    Duration::from_secs(r.get(2).unwrap()),
                 ))
             })
             .unwrap()
@@ -109,7 +119,7 @@ impl Database {
                 Ok(ListenerEntity::new(
                     r.get(0).unwrap(),
                     r.get(1).unwrap(),
-                    r.get(2).unwrap(),
+                    Duration::from_secs(r.get(2).unwrap()),
                 ))
             })
             .unwrap()
@@ -127,8 +137,8 @@ mod tests {
     fn test01() {
         let db = Database::new(None);
 
-        let mut entity1 = ListenerEntity::new(1, 2, 3);
-        let entity2 = ListenerEntity::new(10, 20, 30);
+        let mut entity1 = ListenerEntity::new(1, 2, Duration::from_secs(3));
+        let entity2 = ListenerEntity::new(10, 20, Duration::from_secs(30));
         db.insert(entity1);
         db.insert(entity2);
 
@@ -139,7 +149,7 @@ mod tests {
         println!("{:?}", db.select_all());
 
         entity1.visit_count *= 100;
-        entity1.stay_duration_sec *= 100;
+        entity1.stay_duration *= 100;
         db.update(entity1);
         assert_eq!(vec![entity1, entity2], db.select_all());
         assert_eq!(Some(entity1), db.select_by_id(1));
