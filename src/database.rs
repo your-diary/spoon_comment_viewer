@@ -46,7 +46,7 @@ impl Database {
         self.conn
             .execute(
                 &format!(
-                    "CREATE TABLE {} (
+                    "CREATE TABLE IF NOT EXISTS {} (
               id                INTEGER PRIMARY KEY,
               visit_count       INTEGER,
               stay_duration INTEGER
