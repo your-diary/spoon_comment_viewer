@@ -10,7 +10,7 @@ pub struct ListenerEntity {
 }
 
 impl ListenerEntity {
-    fn new(id: usize, visit_count: usize, stay_duration: Duration) -> ListenerEntity {
+    pub fn new(id: usize, visit_count: usize, stay_duration: Duration) -> ListenerEntity {
         ListenerEntity {
             id,
             visit_count,

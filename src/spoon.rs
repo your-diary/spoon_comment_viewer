@@ -24,7 +24,7 @@ use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
-use super::database::Database;
+use super::database::{Database, ListenerEntity};
 use super::filter::Filter;
 use super::listener::{self, Listener};
 use super::player::Audio;
@@ -647,13 +647,17 @@ impl Spoon {
         for e in exited_listeners {
             if (self.previous_listeners_map.contains_key(&e)) {
                 let c = format!("{}さん、また来てね。", e.nickname);
+                let stay_duration = self.previous_listeners_map.get(&e).unwrap().elapsed();
                 let c_with_time = format!(
                     "{}(滞在時間: {})",
                     c,
-                    util::pretty_print_duration(
-                        self.previous_listeners_map.get(&e).unwrap().elapsed()
-                    )
+                    util::pretty_print_duration(stay_duration),
                 );
+                {
+                    let mut entity = self.database.select_by_id(e.id).unwrap();
+                    entity.stay_duration += stay_duration;
+                    self.database.update(entity);
+                }
                 logger.log(Some(constant::COLOR_GREEN), &c_with_time);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c_with_time)?;
@@ -681,7 +685,17 @@ impl Spoon {
             self.previous_listeners_map
                 .insert(e.clone(), Instant::now());
             if (self.cumulative_listeners.contains(&e)) {
-                let c = format!("{}さん、おかえりなさい。", e.nickname);
+                let entity = self.database.select_by_id(e.id).unwrap();
+                #[allow(clippy::format_in_format_args)]
+                let c = format!(
+                    "{}さん、おかえりなさい。\n({})",
+                    e.nickname,
+                    format!(
+                        "訪問回数: {}回, 累積滞在時間: {}",
+                        entity.visit_count,
+                        util::pretty_print_duration(entity.stay_duration),
+                    )
+                );
                 logger.log(Some(constant::COLOR_GREEN), &c);
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
@@ -692,7 +706,25 @@ impl Spoon {
                 }
             } else {
                 self.cumulative_listeners.insert(e.clone());
-                let c = format!("{}さん、いらっしゃい。", e.nickname);
+                let c = format!(
+                    "{}さん、いらっしゃい。\n({})",
+                    e.nickname,
+                    if let Some(mut entity) = self.database.select_by_id(e.id) {
+                        entity.visit_count += 1;
+                        self.database.update(entity);
+
+                        format!(
+                            "訪問回数: {}回, 累積滞在時間: {}",
+                            entity.visit_count,
+                            util::pretty_print_duration(entity.stay_duration),
+                        )
+                    } else {
+                        let entity = ListenerEntity::new(e.id, 1, Duration::default());
+                        self.database.insert(entity);
+
+                        "初見さん".to_string()
+                    }
+                );
                 logger.log(
                     Some(constant::COLOR_GREEN),
                     &format!("{} ({:?})", c, e), //We print `e` itself to trace the unique user id of a troll.
@@ -730,5 +762,15 @@ impl Spoon {
             }
         }
         Ok(())
+    }
+}
+
+impl Drop for Spoon {
+    fn drop(&mut self) {
+        for (listener, instant) in &self.previous_listeners_map {
+            let mut entity = self.database.select_by_id(listener.id).unwrap();
+            entity.stay_duration += instant.elapsed();
+            self.database.update(entity);
+        }
     }
 }
