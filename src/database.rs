@@ -1,15 +1,15 @@
 use rusqlite::{params, Connection, Statement};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-struct Entity {
+struct ListenerEntity {
     id: usize,
     visit_count: usize,
     stay_duration_sec: usize,
 }
 
-impl Entity {
-    fn new(id: usize, visit_count: usize, stay_duration_sec: usize) -> Entity {
-        Entity {
+impl ListenerEntity {
+    fn new(id: usize, visit_count: usize, stay_duration_sec: usize) -> ListenerEntity {
+        ListenerEntity {
             id,
             visit_count,
             stay_duration_sec,
@@ -19,13 +19,13 @@ impl Entity {
 
 const TABLE_NAME: &str = "listeners";
 
-struct Database {
+pub struct Database {
     conn: Connection,
     table_name: &'static str,
 }
 
 impl Database {
-    fn new(db_path: Option<&'static str>) -> Self {
+    pub fn new(db_path: Option<&str>) -> Self {
         let conn = if let Some(s) = db_path {
             Connection::open(s).unwrap()
         } else {
@@ -56,7 +56,7 @@ impl Database {
             .unwrap();
     }
 
-    fn insert(&self, entity: Entity) {
+    fn insert(&self, entity: ListenerEntity) {
         self.conn
             .execute(
                 &format!(
@@ -68,7 +68,7 @@ impl Database {
             .unwrap();
     }
 
-    fn update(&self, entity: Entity) {
+    fn update(&self, entity: ListenerEntity) {
         self.conn
             .execute(
                 &format!(
@@ -80,14 +80,14 @@ impl Database {
             .unwrap();
     }
 
-    fn select_by_id(&self, id: usize) -> Entity {
+    fn select_by_id(&self, id: usize) -> ListenerEntity {
         let mut statement: Statement = self
             .conn
             .prepare(&format!("SELECT * FROM {} WHERE id = ?;", self.table_name))
             .unwrap();
-        let listeners: Vec<Entity> = statement
+        let listeners: Vec<ListenerEntity> = statement
             .query_map([id], |r| {
-                Ok(Entity::new(
+                Ok(ListenerEntity::new(
                     r.get(0).unwrap(),
                     r.get(1).unwrap(),
                     r.get(2).unwrap(),
@@ -100,14 +100,14 @@ impl Database {
         listeners[0]
     }
 
-    fn select_all(&self) -> Vec<Entity> {
+    fn select_all(&self) -> Vec<ListenerEntity> {
         let mut statement: Statement = self
             .conn
             .prepare(&format!("SELECT * FROM {};", self.table_name))
             .unwrap();
         statement
             .query_map([], |r| {
-                Ok(Entity::new(
+                Ok(ListenerEntity::new(
                     r.get(0).unwrap(),
                     r.get(1).unwrap(),
                     r.get(2).unwrap(),
@@ -128,8 +128,8 @@ mod tests {
     fn test01() {
         let db = Database::new(None);
 
-        let mut entity1 = Entity::new(1, 2, 3);
-        let entity2 = Entity::new(10, 20, 30);
+        let mut entity1 = ListenerEntity::new(1, 2, 3);
+        let entity2 = ListenerEntity::new(10, 20, 30);
         db.insert(entity1);
         db.insert(entity2);
 
