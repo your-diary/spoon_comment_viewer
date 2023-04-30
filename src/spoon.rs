@@ -24,6 +24,7 @@ use super::comment::Comment;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
+use super::database::Database;
 use super::filter::Filter;
 use super::listener::{self, Listener};
 use super::player::Audio;
@@ -119,6 +120,8 @@ impl Logger {
 pub struct Spoon {
     rng: ThreadRng,
 
+    database: Database,
+
     chatgpt: ChatGPT,
     voicevox: VoiceVox,
     bgm: BGM,
@@ -142,6 +145,8 @@ impl Spoon {
     pub fn new(config: &Config) -> Self {
         let filter = Rc::new(Filter::new(&config.forbidden_words));
 
+        let database = Database::new(Some(&config.database_file));
+
         let chatgpt = ChatGPT::new(config, filter.clone());
         let voicevox = VoiceVox::new(config, filter);
         let bgm = BGM::new();
@@ -154,6 +159,7 @@ impl Spoon {
 
         Self {
             rng: rand::thread_rng(),
+            database,
             chatgpt,
             voicevox,
             bgm,
