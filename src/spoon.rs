@@ -691,7 +691,7 @@ impl Spoon {
                     "{}さん、おかえりなさい。\n({})",
                     e.nickname,
                     format!(
-                        "訪問回数: {}回, 累積滞在時間: {}",
+                        "訪問回数: {}回 / 累積滞在時間: {}",
                         entity.visit_count,
                         util::pretty_print_duration(entity.stay_duration),
                     )
@@ -714,7 +714,7 @@ impl Spoon {
                         self.database.update(entity);
 
                         format!(
-                            "訪問回数: {}回, 累積滞在時間: {}",
+                            "訪問回数: {}回 / 累積滞在時間: {}",
                             entity.visit_count,
                             util::pretty_print_duration(entity.stay_duration),
                         )
