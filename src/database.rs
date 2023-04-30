@@ -80,7 +80,7 @@ impl Database {
             .unwrap();
     }
 
-    fn select_by_id(&self, id: usize) -> ListenerEntity {
+    fn select_by_id(&self, id: usize) -> Option<ListenerEntity> {
         let mut statement: Statement = self
             .conn
             .prepare(&format!("SELECT * FROM {} WHERE id = ?;", self.table_name))
@@ -96,8 +96,7 @@ impl Database {
             .unwrap()
             .map(|i| i.unwrap())
             .collect();
-        assert_eq!(1, listeners.len());
-        listeners[0]
+        listeners.get(0).copied()
     }
 
     fn select_all(&self) -> Vec<ListenerEntity> {
@@ -134,16 +133,17 @@ mod tests {
         db.insert(entity2);
 
         assert_eq!(vec![entity1, entity2], db.select_all());
-        assert_eq!(entity1, db.select_by_id(1));
-        assert_eq!(entity2, db.select_by_id(10));
+        assert_eq!(None, db.select_by_id(0));
+        assert_eq!(Some(entity1), db.select_by_id(1));
+        assert_eq!(Some(entity2), db.select_by_id(10));
         println!("{:?}", db.select_all());
 
         entity1.visit_count *= 100;
         entity1.stay_duration_sec *= 100;
         db.update(entity1);
         assert_eq!(vec![entity1, entity2], db.select_all());
-        assert_eq!(entity1, db.select_by_id(1));
-        assert_eq!(entity2, db.select_by_id(10));
+        assert_eq!(Some(entity1), db.select_by_id(1));
+        assert_eq!(Some(entity2), db.select_by_id(10));
         println!("{:?}", db.select_all());
     }
 }
