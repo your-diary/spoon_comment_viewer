@@ -700,8 +700,11 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox
-                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
+                        self.voicevox.say(
+                            c.split('\n').next().unwrap(),
+                            AudioEffect::default(),
+                            config.voicevox.speaker,
+                        );
                     }
                 }
             } else {
@@ -732,8 +735,11 @@ impl Spoon {
                 if (config.spoon.should_comment_listener) {
                     self.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox
-                            .say(&c, AudioEffect::default(), config.voicevox.speaker);
+                        self.voicevox.say(
+                            c.split('\n').next().unwrap(),
+                            AudioEffect::default(),
+                            config.voicevox.speaker,
+                        );
                     }
                 }
             }
