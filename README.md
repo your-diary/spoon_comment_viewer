@@ -117,6 +117,7 @@ $ cp ./config_template.json ./config.json
             }
         }
     },
+    "database_file": "./database.sqlite3",
     "selenium": {
         "webdriver_port": 4444,
         "implicit_timeout_ms": 5000,

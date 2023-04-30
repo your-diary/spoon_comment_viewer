@@ -11,6 +11,7 @@ use super::util;
 pub struct Config {
     pub twitter: Twitter,
     pub spoon: Spoon,
+    pub database_file: String,
     pub selenium: Selenium,
     pub forbidden_words: Vec<String>,
     pub voicevox: VoiceVox,
