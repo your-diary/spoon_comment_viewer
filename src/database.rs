@@ -109,6 +109,7 @@ impl Database {
         listeners.get(0).copied()
     }
 
+    #[cfg(test)]
     fn select_all(&self) -> Vec<ListenerEntity> {
         let mut statement: Statement = self
             .conn
