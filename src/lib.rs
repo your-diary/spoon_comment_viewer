@@ -3,6 +3,7 @@ pub mod chatgpt;
 pub mod comment;
 pub mod config;
 pub mod constant;
+pub mod database;
 pub mod filter;
 pub mod listener;
 pub mod player;
