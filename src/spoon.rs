@@ -373,7 +373,7 @@ impl Spoon {
                             }
                         } else if (config.chatgpt.enabled) {
                             if (tokens[0] == "/help") {
-                                let s = "[ヘルプ]\necho, high, low, fast, slow, asmr, zundamon, sayo のどれかを「/echo  こんにちは」のように使ってみてね。";
+                                let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを「/echo　こんにちは」のように使ってみてね。\n「/bgm」でBGMを変更できるよ。";
                                 self.post_comment(s)?;
                                 continue;
                             } else if (tokens[0].starts_with('/')) {
