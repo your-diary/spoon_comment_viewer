@@ -373,7 +373,8 @@ impl Spoon {
                             }
                         } else if (config.chatgpt.enabled) {
                             if (tokens[0] == "help") {
-                                let s = "help ではなくスラッシュを先頭に付けて /help と打ってみてね。";
+                                let s =
+                                    "help ではなくスラッシュを先頭に付けて\n/help と打ってみてね。";
                                 self.post_comment(s)?;
                                 continue;
                             } else if (tokens[0] == "/help") {
