@@ -4,7 +4,7 @@ use rusqlite::{params, Connection, Statement};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ListenerEntity {
-    id: usize,
+    pub id: usize,
     pub visit_count: usize,
     pub stay_duration: Duration,
 }
@@ -109,8 +109,7 @@ impl Database {
         listeners.get(0).copied()
     }
 
-    #[cfg(test)]
-    fn select_all(&self) -> Vec<ListenerEntity> {
+    pub fn select_all(&self) -> Vec<ListenerEntity> {
         let mut statement: Statement = self
             .conn
             .prepare(&format!("SELECT * FROM {};", self.table_name))

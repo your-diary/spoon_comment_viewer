@@ -695,16 +695,39 @@ impl Spoon {
         for e in new_listeners {
             self.previous_listeners_map
                 .insert(e.clone(), Instant::now());
+
+            let get_ranking = || -> (usize, usize) {
+                let all_entities = self
+                    .database
+                    .select_all()
+                    .into_iter()
+                    .sorted_by_key(|e| (e.stay_duration, e.visit_count))
+                    .rev()
+                    .collect_vec();
+
+                let ranking = all_entities
+                    .iter()
+                    .position(|entity| entity.id == e.id)
+                    .unwrap()
+                    + 1;
+
+                (ranking, all_entities.len())
+            };
+
+            //おかえりなさい
             if (self.cumulative_listeners.contains(&e)) {
                 let entity = self.database.select_by_id(e.id).unwrap();
+                let ranking = get_ranking();
                 #[allow(clippy::format_in_format_args)]
                 let c = format!(
                     "{}さん、おかえりなさい。\n({})",
                     e.nickname,
                     format!(
-                        "訪問回数: {}回 / 累積滞在時間: {}",
+                        "訪問回数: {}回 / 滞在時間: {} / ランキング: {}位/{}人中",
                         entity.visit_count,
                         util::pretty_print_duration(entity.stay_duration),
+                        ranking.0,
+                        ranking.1,
                     )
                 );
                 logger.log(Some(constant::COLOR_GREEN), &c);
@@ -718,6 +741,8 @@ impl Spoon {
                         );
                     }
                 }
+
+            //いらっしゃい
             } else {
                 self.cumulative_listeners.insert(e.clone());
                 let c = format!(
@@ -727,16 +752,26 @@ impl Spoon {
                         entity.visit_count += 1;
                         self.database.update(entity);
 
+                        let ranking = get_ranking();
+
                         format!(
-                            "訪問回数: {}回 / 累積滞在時間: {}",
+                            "訪問回数: {}回 / 滞在時間: {} / ランキング: {}位/{}人中",
                             entity.visit_count,
                             util::pretty_print_duration(entity.stay_duration),
+                            ranking.0,
+                            ranking.1,
                         )
                     } else {
                         let entity = ListenerEntity::new(e.id, 1, Duration::default());
                         self.database.insert(entity);
 
-                        "初見さん".to_string()
+                        let entities = self.database.select_all();
+
+                        format!(
+                            "初見さん / ランキング: {}位/{}人中",
+                            entities.len(),
+                            entities.len()
+                        )
                     }
                 );
                 logger.log(
