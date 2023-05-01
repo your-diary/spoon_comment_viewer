@@ -372,7 +372,11 @@ impl Spoon {
                                 self.voicevox.say(&s, AudioEffect::default(), speaker);
                             }
                         } else if (config.chatgpt.enabled) {
-                            if (tokens[0] == "/help") {
+                            if (tokens[0] == "help") {
+                                let s = "`help` ではなくスラッシュを先頭に付けて `/help` と打ってみてね。";
+                                self.post_comment(s)?;
+                                continue;
+                            } else if (tokens[0] == "/help") {
                                 let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを「/echo　こんにちは」のように使ってみてね。\n「/bgm」でBGMを変更できるよ。";
                                 self.post_comment(s)?;
                                 continue;
@@ -390,10 +394,17 @@ impl Spoon {
                                     "/asmr" => speaker = 22,
                                     "/sayo" => speaker = 46,
                                     _ => {
-                                        let s = format!(
-                                            "`{}`は無効なコマンドだよ。`/help`で確認してね。",
-                                            tokens[0]
-                                        );
+                                        let s = if (tokens[0].is_ascii()) {
+                                            format!(
+                                                "`{}`は無効なコマンドだよ。`/help`で確認してね。",
+                                                tokens[0]
+                                            )
+                                        } else {
+                                            format!(
+                                                "`{}`は無効なコマンドだよ。「/echo　こんにちは」というように、あいだにスペースが入っているか確認してみてね。",
+                                                tokens[0]
+                                            )
+                                        };
                                         self.post_comment(&s)?;
                                         continue;
                                     }
