@@ -377,7 +377,7 @@ impl Spoon {
                                 self.post_comment(s)?;
                                 continue;
                             } else if (tokens[0] == "/help") {
-                                let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを「/echo　こんにちは」のように使ってみてね。\n「/bgm」でBGMを変更できるよ。";
+                                let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを\n「/echo　こんにちは」\nのように使ってみてね。\n\n「/bgm」でBGMを変更できるよ。";
                                 self.post_comment(s)?;
                                 continue;
                             } else if (tokens[0].starts_with('/')) {
