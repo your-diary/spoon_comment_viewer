@@ -253,7 +253,7 @@ impl Spoon {
         }
 
         self.z.click("button.btn-create")?;
-        std::thread::sleep(Duration::from_millis(3000));
+        std::thread::sleep(Duration::from_millis(4000));
 
         Ok(())
     }
