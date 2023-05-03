@@ -1,23 +1,43 @@
 use std::fmt::{self, Display};
 
+use thirtyfour_sync::ElementId;
+
 use super::constant;
 
 /*-------------------------------------*/
 
 pub struct Comment {
-    user: String,
-    text: String,
+    element_id: ElementId,
+    comment_type: CommentType,
+    user: Option<String>,
+    text: Option<String>,
 }
 
 impl Comment {
-    pub fn new(user: String, text: String) -> Self {
-        Comment { user, text }
+    pub fn new(
+        element_id: ElementId,
+        comment_type: CommentType,
+        user: Option<String>,
+        text: Option<String>,
+    ) -> Self {
+        Comment {
+            element_id,
+            comment_type,
+            user,
+            text,
+        }
     }
-    pub fn user(&self) -> &str {
-        &self.user
+    pub fn element_id(&self) -> &ElementId {
+        &self.element_id
     }
-    pub fn text(&self) -> &str {
-        &self.text
+    pub fn comment_type(&self) -> &CommentType {
+        &self.comment_type
+    }
+    pub fn user(&self) -> Option<&String> {
+        self.user.as_ref()
+    }
+    pub fn text(&self) -> Option<&String> {
+        self.text.as_ref()
     }
 }
 
@@ -27,9 +47,9 @@ impl Display for Comment {
             f,
             "{}{}:{} {}",
             constant::COLOR_PURPLE,
-            self.user,
+            self.user().unwrap_or(&String::new()),
             constant::NO_COLOR,
-            self.text,
+            self.text().unwrap_or(&String::new()),
         )
     }
 }

@@ -8,6 +8,7 @@ pub mod filter;
 pub mod listener;
 pub mod player;
 pub mod selenium;
-pub mod spoon;
+pub mod spoon_client;
+pub mod spoon_core;
 pub mod util;
 pub mod voicevox;

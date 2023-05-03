@@ -1,6 +1,7 @@
 use std::env;
 use std::error::Error;
 use std::io::{self, Write};
+use std::rc::Rc;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -8,7 +9,7 @@ use std::time::{Duration, Instant};
 use log::error;
 
 use spoon_comment_viewer::config::Config;
-use spoon_comment_viewer::spoon::Spoon;
+use spoon_comment_viewer::spoon_client::SpoonClient;
 
 const CONFIG_FILE: &str = "./config.json";
 
@@ -23,14 +24,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     })
     .unwrap();
 
-    let config = Config::new(CONFIG_FILE);
+    let config = Rc::new(Config::new(CONFIG_FILE));
 
-    let mut spoon = Spoon::new(&config);
+    let mut spoon = SpoonClient::new(config.clone());
     spoon.login(
         &config.spoon.url,
         &config.twitter.id,
         &config.twitter.password,
     )?;
+
+    thread::sleep(Duration::from_millis(3000));
 
     //automatically starts a live
     if (config.spoon.live.enabled) {
@@ -50,6 +53,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
+    thread::sleep(Duration::from_millis(4000));
+
     spoon.init()?;
 
     let start = Instant::now();
@@ -65,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             config.spoon.comment_check_interval_ms,
         ));
 
-        if let Err(e) = spoon.process_comments(&config) {
+        if let Err(e) = spoon.process_comments() {
             error!("{}", e);
             continue;
         }
@@ -78,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        if let Err(e) = spoon.process_message_tunnel(&config) {
+        if let Err(e) = spoon.process_message_tunnel() {
             error!("{}", e);
             continue;
         }

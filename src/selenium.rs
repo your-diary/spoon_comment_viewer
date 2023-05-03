@@ -54,6 +54,14 @@ impl Selenium {
         &self.driver
     }
 
+    pub fn close(&self) -> Result<(), WebDriverError> {
+        self.driver.close()
+    }
+
+    pub fn get(&self, url: &str) -> Result<(), WebDriverError> {
+        self.driver.get(url)
+    }
+
     pub fn query(&self, css_selector: &str) -> Result<WebElement, WebDriverError> {
         self.driver.find_element(By::Css(css_selector))
     }
