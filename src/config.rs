@@ -42,6 +42,7 @@ pub struct Spoon {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Live {
     pub enabled: bool,
+    pub autostart: bool,
     pub start_url: String,
     pub genre: String,
     pub title: String,

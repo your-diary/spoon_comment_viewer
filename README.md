@@ -99,6 +99,7 @@ $ cp ./config_template.json ./config.json
         "message_tunnel_file": "~/ramdisk/tunnel.txt",
         "live": {
             "enabled": false,
+            "autostart": false,
             "start_url": "https://www.spooncast.net/jp/live/broadcast",
             "genre": "勉強",
             "title": "一緒に勉強しよう!!",

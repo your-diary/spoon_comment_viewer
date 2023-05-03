@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
 use std::fs;
+use std::io;
+use std::io::Write;
 use std::path::Path;
 use std::rc::Rc;
 use std::thread;
@@ -243,7 +245,17 @@ impl SpoonClient {
             ));
         }
 
-        self.spoon.start_live()?;
+        if (live.autostart) {
+            self.spoon.start_live()?;
+        } else {
+            print!("Press ENTER after you have started a live: ");
+            io::stdout().flush().unwrap();
+            let mut buf = String::new();
+            io::stdin().read_line(&mut buf).unwrap();
+            if (buf.trim() == "q") {
+                return Err("aborted".into());
+            }
+        }
 
         Ok(())
     }
