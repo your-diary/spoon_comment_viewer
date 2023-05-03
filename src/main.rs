@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         c += 1;
 
-        if ((start.elapsed().as_secs() > 3600 * 2 + 5) || rx.try_recv().is_ok()) {
+        if ((start.elapsed() > Duration::from_secs(3600 * 2 + 5)) || rx.try_recv().is_ok()) {
             break;
         }
 
