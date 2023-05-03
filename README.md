@@ -101,7 +101,7 @@ $ cp ./config_template.json ./config.json
             "enabled": false,
             "autostart": false,
             "start_url": "https://www.spooncast.net/jp/live/broadcast",
-            "genre": "勉強",
+            "genre": "勉強/作業",
             "title": "一緒に勉強しよう!!",
             "tags": [
                 "勉強"
