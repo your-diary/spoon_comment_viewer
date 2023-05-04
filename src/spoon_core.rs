@@ -6,6 +6,7 @@ use log::info;
 use regex::Regex;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
+use thirtyfour_sync::ElementId;
 
 use super::comment::Comment;
 use super::comment::CommentType;
@@ -17,6 +18,7 @@ pub struct Spoon {
     http_client: Client,
     live_id: u64,
     previous_commenter: String, //for combo comment
+    existing_comments: Vec<ElementId>,
 }
 
 impl Spoon {
@@ -29,6 +31,7 @@ impl Spoon {
                 .unwrap(),
             live_id: 0,
             previous_commenter: String::new(),
+            existing_comments: Vec::with_capacity(1000),
         }
     }
 
@@ -130,15 +133,32 @@ impl Spoon {
         Ok(())
     }
 
-    pub fn retrieve_comments(&mut self) -> Result<Vec<Comment>, WebDriverError> {
+    pub fn retrieve_new_comments(&mut self) -> Result<Vec<Comment>, WebDriverError> {
         let mut ret = vec![];
 
         let start = Instant::now();
         let l = self.z.query_all("li.chat-list-item")?;
         info!("self.z.query_all: {}ms", start.elapsed().as_millis());
 
-        for e in &l {
+        let num_new_comment = if (self.existing_comments.is_empty()) {
+            l.len()
+        } else if let Some(i) = l
+            .iter()
+            .rposition(|e| &e.element_id == self.existing_comments.last().unwrap())
+        {
+            l.len() - (i + 1)
+        } else {
+            l.len()
+        };
+
+        if (num_new_comment == 0) {
+            return Ok(vec![]);
+        }
+
+        for e in l.iter().skip(l.len() - num_new_comment) {
             let element_id = e.element_id.clone();
+
+            self.existing_comments.push(element_id.clone());
 
             let inner_text = match e.text() {
                 Ok(s) => s,

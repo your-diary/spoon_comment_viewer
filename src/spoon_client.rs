@@ -17,7 +17,6 @@ use log::info;
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
 use thirtyfour_sync::error::WebDriverError;
-use thirtyfour_sync::ElementId;
 
 use super::bgm::BGM;
 use super::chatgpt::ChatGPT;
@@ -158,9 +157,6 @@ pub struct SpoonClient {
 
     z: Rc<Selenium>,
 
-    //comments
-    comment_set: HashSet<ElementId>, //records existing comments
-
     //listeners
     previous_listeners_set: HashSet<Listener>, //for `いらっしゃい`, `おかえりなさい`, `またきてね`
     previous_listeners_map: HashMap<Listener, Instant>, //for `xxx秒の滞在でした`
@@ -196,8 +192,6 @@ impl SpoonClient {
             voicevox,
             bgm,
             z,
-
-            comment_set: HashSet::new(),
 
             previous_listeners_set: HashSet::new(),
             previous_listeners_map: HashMap::new(),
@@ -275,6 +269,10 @@ impl SpoonClient {
         let mut speaker = self.config.voicevox.speaker;
 
         let mut tokens = comment_text.split_whitespace().collect_vec();
+        if (tokens.is_empty()) {
+            //This happened once.
+            return Err("empty comment is unexpectedly detected".into());
+        }
         if (tokens[0] == "/bgm") {
             if (self.config.spoon.live.bgm.audio_list.len() <= 1) {
                 let s = "BGMの再生に失敗しました。";
@@ -470,40 +468,28 @@ impl SpoonClient {
 
     pub fn process_comments(&mut self) -> Result<(), Box<dyn Error>> {
         let start = Instant::now();
-        let comments = self.spoon.retrieve_comments()?;
+        let comments = self.spoon.retrieve_new_comments()?;
         info!(
             "self.spoon.retrieve_comments: {}ms",
             start.elapsed().as_millis()
         );
 
-        let num_new_comment = {
-            let mut c = 0;
-            for e in comments.iter().rev() {
-                if (self.comment_set.contains(e.element_id())) {
-                    break;
-                }
-                self.comment_set.insert(e.element_id().clone());
-                c += 1;
-            }
-            c
-        };
-
-        if (num_new_comment == 0) {
+        if (comments.is_empty()) {
             return Ok(());
         }
 
         //With a small enough check interval, it is unexpected `num_new_comment` has a large value.
         //However, it sometimes happened for some reason: at that time, it seemed the already processed comments in the past were mistakenly treated as new comments.
         //The cause is unknown but we suspect `element_id` may be reassigned by a bug of Spoon or Selenium.
-        if (num_new_comment >= 15) {
+        if (comments.len() >= 15) {
             error!(
                 "The value of `num_new_comment` is too large: {}. Ignoring them...",
-                num_new_comment
+                comments.len()
             );
             return Ok(());
         }
 
-        for e in comments.iter().skip(comments.len() - num_new_comment) {
+        for e in comments {
             let user = e.user();
             let text = e.text();
 
