@@ -1,8 +1,7 @@
-use std::{error::Error, path::Path, rc::Rc, time::Duration, time::Instant};
+use std::{error::Error, path::Path, rc::Rc, time::Duration};
 
 use itertools::Itertools;
 use log::error;
-use log::info;
 use regex::Regex;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
@@ -136,9 +135,7 @@ impl Spoon {
     pub fn retrieve_new_comments(&mut self) -> Result<Vec<Comment>, WebDriverError> {
         let mut ret = vec![];
 
-        let start = Instant::now();
         let l = self.z.query_all("li.chat-list-item")?;
-        info!("self.z.query_all: {}ms", start.elapsed().as_millis());
 
         let num_new_comment = if (self.existing_comments.is_empty()) {
             l.len()

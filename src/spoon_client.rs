@@ -13,7 +13,6 @@ use std::time::Instant;
 use chrono::Local;
 use itertools::Itertools;
 use log::error;
-use log::info;
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
 use thirtyfour_sync::error::WebDriverError;
@@ -467,12 +466,7 @@ impl SpoonClient {
     }
 
     pub fn process_comments(&mut self) -> Result<(), Box<dyn Error>> {
-        let start = Instant::now();
         let comments = self.spoon.retrieve_new_comments()?;
-        info!(
-            "self.spoon.retrieve_comments: {}ms",
-            start.elapsed().as_millis()
-        );
 
         if (comments.is_empty()) {
             return Ok(());
