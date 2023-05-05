@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     fs,
     process::Command,
-    rc::Rc,
     sync::mpsc::{self, Receiver, Sender},
     thread,
     time::{Duration, SystemTime},
@@ -195,16 +194,32 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
 /*-------------------------------------*/
 
+pub struct Script {
+    pub script: String,
+    pub effect: AudioEffect,
+    pub speaker: usize,
+}
+
+impl Script {
+    pub fn new(script: &str, effect: AudioEffect, speaker: usize) -> Self {
+        Self {
+            script: script.to_string(),
+            effect,
+            speaker,
+        }
+    }
+}
+
 pub struct VoiceVox {
     enabled: bool,
     should_skip_non_japanese: bool,
     should_use_google_speech_for_non_japanese: bool,
     tx: Option<Sender<APIRequest>>,
-    filter: Option<Rc<Filter>>,
+    filter: Option<Filter>,
 }
 
 impl VoiceVox {
-    pub fn new(config: &Config, filter: Rc<Filter>) -> Self {
+    pub fn new(config: &Config, filter: Filter) -> Self {
         if (config.voicevox.enabled) {
             let should_skip_non_japanese = config.voicevox.should_skip_non_japanese;
             let should_use_google_speech_for_non_japanese =
@@ -230,22 +245,22 @@ impl VoiceVox {
         }
     }
 
-    pub fn say(&mut self, script: &str, mut effect: AudioEffect, speaker: usize) {
+    pub fn say(&mut self, mut script: Script) {
         if (!self.enabled) {
             return;
         }
-        if (!self.filter.as_ref().unwrap().is_normal(script)) {
-            info!("Forbidden word detected: [{}]", script);
+        if (!self.filter.as_ref().unwrap().is_normal(&script.script)) {
+            info!("Forbidden word detected: [{}]", script.script);
             return;
         }
-        if (self.should_skip_non_japanese && !util::is_japanese(script)) {
+        if (self.should_skip_non_japanese && !util::is_japanese(&script.script)) {
             if (self.should_use_google_speech_for_non_japanese) {
-                effect.pitch_for_english = true;
+                script.effect.pitch_for_english = true;
             } else {
                 return;
             }
         }
-        let req = APIRequest::new(script, effect, speaker);
+        let req = APIRequest::new(&script.script, script.effect, script.speaker);
         if let Err(e) = self.tx.as_ref().unwrap().send(req) {
             error!("{}", e);
             self.enabled = false;

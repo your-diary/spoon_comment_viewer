@@ -30,6 +30,7 @@ use super::player::AudioEffect;
 use super::selenium::Selenium;
 use super::spoon_core::Spoon;
 use super::util;
+use super::voicevox::Script;
 use super::voicevox::VoiceVox;
 
 /*-------------------------------------*/
@@ -164,7 +165,7 @@ pub struct SpoonClient {
 
 impl SpoonClient {
     pub fn new(config: Rc<Config>) -> Self {
-        let filter = Rc::new(Filter::new(&config.forbidden_words));
+        let filter = Filter::new(&config.forbidden_words);
 
         let database = Database::new(Some(&config.database_file));
 
@@ -277,7 +278,8 @@ impl SpoonClient {
                 let s = "BGMの再生に失敗しました。";
                 self.spoon.post_comment(s)?;
                 if (self.config.voicevox.enabled) {
-                    self.voicevox.say(s, AudioEffect::default(), speaker);
+                    self.voicevox
+                        .say(Script::new(s, AudioEffect::default(), speaker));
                 }
                 return Ok(false);
             }
@@ -288,7 +290,8 @@ impl SpoonClient {
             let s = format!("再生予定のBGMリストに [ {} ] を追加しました。", bgm.title);
             self.spoon.post_comment(&s)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox.say(&s, AudioEffect::default(), speaker);
+                self.voicevox
+                    .say(Script::new(&s, AudioEffect::default(), speaker));
             }
         } else if (self.config.chatgpt.enabled) {
             if (tokens[0] == "help") {
@@ -332,7 +335,8 @@ impl SpoonClient {
                     );
                     self.spoon.post_comment(&s)?;
                     if (self.config.voicevox.enabled) {
-                        self.voicevox.say(&s, AudioEffect::default(), speaker);
+                        self.voicevox
+                            .say(Script::new(&s, AudioEffect::default(), speaker));
                     }
                     return Ok(false);
                 }
@@ -340,28 +344,11 @@ impl SpoonClient {
                 comment_text = tokens.join(" ");
             }
 
-            //`split_whitespace().join(" ")` is needed to always make a single query even when a comment is multi-line.
-            if let Some(s) = self
-                .chatgpt
-                .complete(&comment_text.split_whitespace().join(" "))
-            {
-                let s = s.trim();
-                if (s == "QUOTA_ERROR") {
-                    let s = "AI部分にエラーが発生しました。管理人に通知を送信しました。一分後、枠を終了します。申し訳ございません。";
-                    self.spoon.post_comment(s)?;
-                    if (self.config.voicevox.enabled) {
-                        self.voicevox.say(s, effect, speaker);
-                    }
-                    thread::sleep(Duration::from_secs(60));
-                    let _ = self.z.close();
-                    thread::sleep(Duration::from_secs(60 * 60 * 24 * 31));
-                } else {
-                    self.spoon.post_comment(s)?;
-                    if (self.config.voicevox.enabled) {
-                        self.voicevox.say(s, effect, speaker);
-                    }
-                }
-            }
+            self.chatgpt.push(Script::new(
+                &comment_text.split_whitespace().join(" "),
+                effect,
+                speaker,
+            ));
         }
 
         Ok(true)
@@ -375,8 +362,11 @@ impl SpoonClient {
         {
             self.spoon.post_comment(&c)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox
-                    .say(&c, AudioEffect::default(), self.config.voicevox.speaker);
+                self.voicevox.say(Script::new(
+                    &c,
+                    AudioEffect::default(),
+                    self.config.voicevox.speaker,
+                ));
             }
         }
         Ok(())
@@ -388,14 +378,14 @@ impl SpoonClient {
         if (self.config.spoon.should_comment_heart) {
             self.spoon.post_comment(&c)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox.say(
+                self.voicevox.say(Script::new(
                     &c,
                     AudioEffect {
                         reverb: true,
                         ..Default::default()
                     },
                     self.config.voicevox.speaker,
-                );
+                ));
             }
         }
         Ok(())
@@ -419,14 +409,14 @@ impl SpoonClient {
             let s = format!("{}さん、{}ありがとう。", user, present_name);
             self.spoon.post_comment(&s)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox.say(
+                self.voicevox.say(Script::new(
                     &s,
                     AudioEffect {
                         reverb: true,
                         ..Default::default()
                     },
                     self.config.voicevox.speaker,
-                );
+                ));
             }
         }
 
@@ -439,8 +429,11 @@ impl SpoonClient {
         if (self.config.spoon.should_comment_block) {
             self.spoon.post_comment(&c)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox
-                    .say(&c, AudioEffect::default(), self.config.voicevox.speaker);
+                self.voicevox.say(Script::new(
+                    &c,
+                    AudioEffect::default(),
+                    self.config.voicevox.speaker,
+                ));
             }
         }
         Ok(())
@@ -451,21 +444,48 @@ impl SpoonClient {
         let c = "点呼するよ。";
         self.spoon.post_comment(c)?;
         if (self.config.voicevox.enabled) {
-            self.voicevox
-                .say(c, AudioEffect::default(), self.config.voicevox.speaker);
+            self.voicevox.say(Script::new(
+                c,
+                AudioEffect::default(),
+                self.config.voicevox.speaker,
+            ));
         }
         for listener in &self.previous_listeners_set {
             let c = format!("{}さん、来てくれてありがとう。", listener.nickname);
             self.spoon.post_comment(&c)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox
-                    .say(&c, AudioEffect::default(), self.config.voicevox.speaker);
+                self.voicevox.say(Script::new(
+                    &c,
+                    AudioEffect::default(),
+                    self.config.voicevox.speaker,
+                ));
             }
         }
         Ok(())
     }
 
     pub fn process_comments(&mut self) -> Result<(), Box<dyn Error>> {
+        if (self.config.chatgpt.enabled) {
+            for e in self.chatgpt.fetch() {
+                let s = e.script.trim();
+                if (s == "QUOTA_ERROR") {
+                    let s = "AI部分にエラーが発生しました。管理人に通知を送信しました。一分後、枠を終了します。申し訳ございません。";
+                    self.spoon.post_comment(s)?;
+                    if (self.config.voicevox.enabled) {
+                        self.voicevox.say(Script::new(s, e.effect, e.speaker));
+                    }
+                    thread::sleep(Duration::from_secs(60));
+                    let _ = self.z.close();
+                    thread::sleep(Duration::from_secs(60 * 60 * 24 * 31));
+                } else {
+                    self.spoon.post_comment(s)?;
+                    if (self.config.voicevox.enabled) {
+                        self.voicevox.say(Script::new(s, e.effect, e.speaker));
+                    }
+                }
+            }
+        }
+
         let comments = self.spoon.retrieve_new_comments()?;
 
         if (comments.is_empty()) {
@@ -551,8 +571,11 @@ impl SpoonClient {
             if (config.spoon.should_comment_listener) {
                 self.spoon.post_comment(&c_with_time)?;
                 if (config.voicevox.enabled) {
-                    self.voicevox
-                        .say(&c, AudioEffect::default(), config.voicevox.speaker);
+                    self.voicevox.say(Script::new(
+                        &c,
+                        AudioEffect::default(),
+                        config.voicevox.speaker,
+                    ));
                 }
             }
             self.previous_listeners_map.remove(&e);
@@ -600,11 +623,11 @@ impl SpoonClient {
                 if (config.spoon.should_comment_listener) {
                     self.spoon.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(
+                        self.voicevox.say(Script::new(
                             c.split('\n').next().unwrap(),
                             AudioEffect::default(),
                             config.voicevox.speaker,
-                        );
+                        ));
                     }
                 }
 
@@ -647,11 +670,11 @@ impl SpoonClient {
                 if (config.spoon.should_comment_listener) {
                     self.spoon.post_comment(&c)?;
                     if (config.voicevox.enabled) {
-                        self.voicevox.say(
+                        self.voicevox.say(Script::new(
                             c.split('\n').next().unwrap(),
                             AudioEffect::default(),
                             config.voicevox.speaker,
-                        );
+                        ));
                     }
                 }
             }
@@ -675,8 +698,11 @@ impl SpoonClient {
         if (!s.is_empty()) {
             self.spoon.post_comment(&format!("(運営より) {}", s))?;
             if (self.config.voicevox.enabled) {
-                self.voicevox
-                    .say(&s, AudioEffect::default(), self.config.voicevox.speaker);
+                self.voicevox.say(Script::new(
+                    &s,
+                    AudioEffect::default(),
+                    self.config.voicevox.speaker,
+                ));
             }
         }
         Ok(())

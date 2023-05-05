@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Filter {
     forbidden_words: Vec<String>,
 }
