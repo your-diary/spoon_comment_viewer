@@ -312,9 +312,28 @@ impl SpoonClient {
                     "/right" => effect.right = true, //low quality on Linux
                     "/fast" => effect.fast = true,
                     "/slow" => effect.slow = true,
+
                     "/zundamon" => speaker = 3,
+                    "/zundamon_2" => speaker = 1,
+                    "/zundamon_3" => speaker = 7,
+                    "/zundamon_4" => speaker = 5,
+                    "/zundamon_5" => speaker = 38,
+
                     "/asmr" => speaker = 22,
+
                     "/sayo" => speaker = 46,
+
+                    "/tsumugi" => speaker = 8,
+
+                    "/himari" => speaker = 14,
+
+                    "/nurse" => speaker = 47,
+                    "/nurse_asmr" => speaker = 50,
+
+                    "/bii" => speaker = 58,
+                    "/bii_calm" => speaker = 59,
+                    "/bii_shy" => speaker = 60,
+
                     _ => {
                         let s = if (tokens[0].is_ascii()) {
                             format!("`{}`は無効なコマンドだよ。`/help`で確認してね。", tokens[0])
