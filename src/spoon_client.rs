@@ -623,7 +623,11 @@ impl SpoonClient {
             };
 
             //おかえりなさい
-            if (self.cumulative_listeners.contains(&e)) {
+            if (self
+                .cumulative_listeners
+                .iter()
+                .any(|listener| listener.id == e.id))
+            {
                 let entity = self.database.select_by_id(e.id).unwrap();
                 if (entity.name != e.nickname) {
                     let mut entity = entity.clone();
