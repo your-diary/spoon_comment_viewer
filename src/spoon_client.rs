@@ -625,6 +625,11 @@ impl SpoonClient {
             //おかえりなさい
             if (self.cumulative_listeners.contains(&e)) {
                 let entity = self.database.select_by_id(e.id).unwrap();
+                if (entity.name != e.nickname) {
+                    let mut entity = entity.clone();
+                    entity.name = e.nickname.clone();
+                    self.database.update(entity);
+                }
                 let ranking = get_ranking();
                 #[allow(clippy::format_in_format_args)]
                 let c = format!(
@@ -657,8 +662,9 @@ impl SpoonClient {
                     "{}さん、いらっしゃい。\n({})",
                     e.nickname,
                     if let Some(mut entity) = self.database.select_by_id(e.id) {
+                        entity.name = e.nickname.clone();
                         entity.visit_count += 1;
-                        self.database.update(entity);
+                        self.database.update(entity.clone());
 
                         let ranking = get_ranking();
 
@@ -670,7 +676,8 @@ impl SpoonClient {
                             ranking.1,
                         )
                     } else {
-                        let entity = ListenerEntity::new(e.id, 1, Duration::default());
+                        let entity =
+                            ListenerEntity::new(e.id, e.nickname.clone(), 1, Duration::default());
                         self.database.insert(entity);
 
                         let entities = self.database.select_all();

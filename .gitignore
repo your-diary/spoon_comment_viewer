@@ -12,3 +12,4 @@ test_assets/
 yrun.sh
 todo.md
 *.bak
+*.sql
