@@ -15,6 +15,8 @@ use itertools::Itertools;
 use log::error;
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
+use rand::seq::IteratorRandom;
+use rand::Rng;
 use thirtyfour_sync::error::WebDriverError;
 
 use super::bgm::BGM;
@@ -333,6 +335,47 @@ impl SpoonClient {
                     "/bii" => speaker = 58,
                     "/bii_calm" => speaker = 59,
                     "/bii_shy" => speaker = 60,
+
+                    "/fortune" => {
+                        let fortune_names = vec![
+                            "総合運",
+                            "恋愛運",
+                            "金運",
+                            "ラッキーナンバー",
+                            "ラッキーカラー",
+                        ];
+                        let colors = vec![
+                            "藍", "青", "青緑", "青紫", "赤", "茜", "小豆", "黄", "黄緑", "金",
+                            "銀", "銅", "栗", "黒", "焦茶", "小麦", "紺", "桜", "珊瑚", "漆黒",
+                            "朱", "白", "空", "橙", "玉虫", "茶", "灰", "肌", "薔薇", "深緑", "水",
+                            "緑", "紫", "桃", "瑠璃", "透明",
+                        ];
+
+                        let mut l = (0..3)
+                            .map(|_| "★".repeat(self.rng.gen_range(1..=5)))
+                            .collect_vec();
+                        l.push(self.rng.gen_range(0..=1000).to_string());
+                        l.push(colors.iter().choose(&mut self.rng).unwrap().to_string());
+
+                        let s = format!(
+                            "🔮 {}さん\n{}",
+                            user,
+                            fortune_names
+                                .iter()
+                                .zip(l)
+                                .map(|(name, value)| format!("{}: {}", name, value))
+                                .join("\n")
+                        );
+                        self.spoon.post_comment(&s)?;
+                        // if (self.config.voicevox.enabled) {
+                        //     self.voicevox.say(Script::new(
+                        //         &format!("{}さんを占ったよ", user),
+                        //         AudioEffect::default(),
+                        //         speaker,
+                        //     ));
+                        // }
+                        return Ok(false);
+                    }
 
                     _ => {
                         let s = if (tokens[0].is_ascii()) {
