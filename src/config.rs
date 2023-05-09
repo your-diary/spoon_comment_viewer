@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -60,6 +61,7 @@ pub struct BGM {
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Audio {
+    enabled: bool,
     pub title: String,
     pub path: String,
     pub volume: f64,
@@ -114,6 +116,14 @@ impl Config {
         });
         util::canonicalize_path_in_place(&mut ret.voicevox.output_dir);
         assert!(ret.spoon.live.tags.len() <= 5);
+        ret.spoon.live.bgm.audio_list = ret
+            .spoon
+            .live
+            .bgm
+            .audio_list
+            .into_iter()
+            .filter(|e| e.enabled)
+            .collect_vec();
         ret
     }
 }

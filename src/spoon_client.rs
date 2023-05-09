@@ -292,8 +292,11 @@ impl SpoonClient {
             let s = format!("再生予定のBGMリストに [ {} ] を追加しました。", bgm.title);
             self.spoon.post_comment(&s)?;
             if (self.config.voicevox.enabled) {
-                self.voicevox
-                    .say(Script::new(&s, AudioEffect::default(), speaker));
+                self.voicevox.say(Script::new(
+                    "再生予定のBGMリストに楽曲を追加しました",
+                    AudioEffect::default(),
+                    speaker,
+                ));
             }
         } else if (self.config.chatgpt.enabled) {
             if (tokens[0] == "help") {
