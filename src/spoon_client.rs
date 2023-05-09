@@ -304,105 +304,103 @@ impl SpoonClient {
                 let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを\n「/echo　こんにちは」\nのように使ってみてね。\n\n「/bgm」でBGMを変更できるよ。";
                 self.spoon.post_comment(s)?;
                 return Ok(false);
+            } else if (tokens[0] == "/fortune") {
+                let fortune_names = vec![
+                    "総合運",
+                    "恋愛運",
+                    "金運",
+                    "ラッキーナンバー",
+                    "ラッキーカラー",
+                ];
+                let colors = vec![
+                    "藍", "青", "青緑", "青紫", "赤", "茜", "小豆", "黄", "黄緑", "金", "銀", "銅",
+                    "栗", "黒", "焦茶", "小麦", "紺", "桜", "珊瑚", "漆黒", "朱", "白", "空", "橙",
+                    "玉虫", "茶", "灰", "肌", "薔薇", "深緑", "水", "緑", "紫", "桃", "瑠璃",
+                    "透明",
+                ];
+
+                let mut l = (0..3)
+                    .map(|_| "★".repeat(self.rng.gen_range(1..=5)))
+                    .collect_vec();
+                l.push(self.rng.gen_range(0..=1000).to_string());
+                l.push(colors.iter().choose(&mut self.rng).unwrap().to_string());
+
+                let s = format!(
+                    "🔮 {}さん\n{}",
+                    user,
+                    fortune_names
+                        .iter()
+                        .zip(l)
+                        .map(|(name, value)| format!("{}: {}", name, value))
+                        .join("\n")
+                );
+                self.spoon.post_comment(&s)?;
+                return Ok(false);
             } else if (tokens[0].starts_with('/')) {
-                match tokens[0] {
-                    "/reverb" => effect.reverb = true,
-                    "/echo" => effect.reverb = true, //same as `/reverb`
-                    "/high" => effect.high = true,
-                    "/low" => effect.low = true,
-                    "/left" => effect.left = true, //low quality on Linux
-                    "/right" => effect.right = true, //low quality on Linux
-                    "/fast" => effect.fast = true,
-                    "/slow" => effect.slow = true,
-
-                    "/zundamon" => speaker = 3,
-                    "/zundamon_2" => speaker = 1,
-                    "/zundamon_3" => speaker = 7,
-                    "/zundamon_4" => speaker = 5,
-                    "/zundamon_5" => speaker = 38,
-
-                    "/asmr" => speaker = 22,
-
-                    "/sayo" => speaker = 46,
-
-                    "/tsumugi" => speaker = 8,
-
-                    "/himari" => speaker = 14,
-
-                    "/nurse" => speaker = 47,
-                    "/nurse_asmr" => speaker = 50,
-
-                    "/bii" => speaker = 58,
-                    "/bii_calm" => speaker = 59,
-                    "/bii_shy" => speaker = 60,
-
-                    "/fortune" => {
-                        let fortune_names = vec![
-                            "総合運",
-                            "恋愛運",
-                            "金運",
-                            "ラッキーナンバー",
-                            "ラッキーカラー",
-                        ];
-                        let colors = vec![
-                            "藍", "青", "青緑", "青紫", "赤", "茜", "小豆", "黄", "黄緑", "金",
-                            "銀", "銅", "栗", "黒", "焦茶", "小麦", "紺", "桜", "珊瑚", "漆黒",
-                            "朱", "白", "空", "橙", "玉虫", "茶", "灰", "肌", "薔薇", "深緑", "水",
-                            "緑", "紫", "桃", "瑠璃", "透明",
-                        ];
-
-                        let mut l = (0..3)
-                            .map(|_| "★".repeat(self.rng.gen_range(1..=5)))
-                            .collect_vec();
-                        l.push(self.rng.gen_range(0..=1000).to_string());
-                        l.push(colors.iter().choose(&mut self.rng).unwrap().to_string());
-
-                        let s = format!(
-                            "🔮 {}さん\n{}",
-                            user,
-                            fortune_names
-                                .iter()
-                                .zip(l)
-                                .map(|(name, value)| format!("{}: {}", name, value))
-                                .join("\n")
-                        );
-                        self.spoon.post_comment(&s)?;
-                        // if (self.config.voicevox.enabled) {
-                        //     self.voicevox.say(Script::new(
-                        //         &format!("{}さんを占ったよ", user),
-                        //         AudioEffect::default(),
-                        //         speaker,
-                        //     ));
-                        // }
-                        return Ok(false);
+                let mut num_command = 0;
+                for token in &tokens {
+                    if (!token.starts_with('/')) {
+                        break;
                     }
+                    num_command += 1;
+                    match *token {
+                        "/reverb" => effect.reverb = true,
+                        "/echo" => effect.reverb = true, //same as `/reverb`
+                        "/high" => effect.high = true,
+                        "/low" => effect.low = true,
+                        "/left" => effect.left = true, //low quality on Linux
+                        "/right" => effect.right = true, //low quality on Linux
+                        "/fast" => effect.fast = true,
+                        "/slow" => effect.slow = true,
 
-                    _ => {
-                        let s = if (tokens[0].is_ascii()) {
-                            format!("`{}`は無効なコマンドだよ。`/help`で確認してね。", tokens[0])
-                        } else {
-                            format!(
-                                                "`{}`は無効なコマンドだよ。「/echo　こんにちは」というように、あいだにスペースが入っているか確認してみてね。",
-                                                tokens[0]
-                                            )
-                        };
-                        self.spoon.post_comment(&s)?;
-                        return Ok(false);
+                        "/zundamon" => speaker = 3,
+                        "/zundamon_2" => speaker = 1,
+                        "/zundamon_3" => speaker = 7,
+                        "/zundamon_4" => speaker = 5,
+                        "/zundamon_5" => speaker = 38,
+
+                        "/asmr" => speaker = 22,
+
+                        "/sayo" => speaker = 46,
+
+                        "/tsumugi" => speaker = 8,
+
+                        "/himari" => speaker = 14,
+
+                        "/nurse" => speaker = 47,
+                        "/nurse_asmr" => speaker = 50,
+
+                        "/bii" => speaker = 58,
+                        "/bii_calm" => speaker = 59,
+                        "/bii_shy" => speaker = 60,
+
+                        _ => {
+                            let s = if (token.is_ascii()) {
+                                format!("`{}`は無効なコマンドだよ。`/help`で確認してね。", token,)
+                            } else {
+                                format!(
+                                                    "`{}`は無効なコマンドだよ。「/echo　こんにちは」というように、あいだにスペースが入っているか確認してみてね。",
+                                                    token,
+                                                )
+                            };
+                            self.spoon.post_comment(&s)?;
+                            return Ok(false);
+                        }
                     }
                 }
-                if (tokens.len() == 1) {
+                if (tokens.len() == num_command) {
+                    let command = tokens.iter().take(num_command).join(" ");
                     let s = format!(
-                        "`{}`単体では使用できないよ。`/help`で確認してね。",
-                        tokens[0]
+                        "`{}`単体では使用できないよ。「{}　こんにちは」のように、テキストを足してみてね。",
+                        command,
+                        command,
                     );
                     self.spoon.post_comment(&s)?;
-                    if (self.config.voicevox.enabled) {
-                        self.voicevox
-                            .say(Script::new(&s, AudioEffect::default(), speaker));
-                    }
                     return Ok(false);
                 }
-                tokens.remove(0);
+                for _ in 0..num_command {
+                    tokens.remove(0);
+                }
                 comment_text = tokens.join(" ");
             }
 
