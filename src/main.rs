@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    thread::sleep(Duration::from_millis(4000));
+    thread::sleep(Duration::from_millis(5000));
 
     spoon.init()?;
 

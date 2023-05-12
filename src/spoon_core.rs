@@ -1,7 +1,8 @@
+use std::thread;
 use std::{error::Error, path::Path, rc::Rc, time::Duration};
 
 use itertools::Itertools;
-use log::error;
+use log::{error, info};
 use regex::Regex;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
@@ -107,19 +108,36 @@ impl Spoon {
     }
 
     pub fn update_live_id(&mut self) -> Result<(), Box<dyn Error>> {
-        if let serde_json::value::Value::Number(n) = self.z.execute_javascript(
-            "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
-        )? {
-            match n.as_u64() {
-                Some(id) => {
-                    self.live_id = id;
-                    Ok(())
+        let f = || {
+            self.z.execute_javascript(
+                "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
+            )
+        };
+        let max_retry = 3;
+        for i in 0..max_retry {
+            let live_id_json = f();
+            if let Err(e) = live_id_json {
+                if (i == max_retry - 1) {
+                    return Err(e.into());
+                } else {
+                    info!("Retrying to retrieve the liveId...");
+                    thread::sleep(Duration::from_millis(5000));
+                    continue;
                 }
-                None => Err("Failed to parse the live id as number.".into()),
             }
-        } else {
-            Err("Failed to retrieve the live id.".into())
+            if let serde_json::value::Value::Number(n) = live_id_json.unwrap() {
+                match n.as_u64() {
+                    Some(id) => {
+                        self.live_id = id;
+                        return Ok(());
+                    }
+                    None => return Err("Failed to parse the live id as number.".into()),
+                }
+            } else {
+                return Err("Failed to retrieve the live id.".into());
+            }
         }
+        unreachable!();
     }
 
     pub fn post_comment(&self, s: &str) -> Result<(), WebDriverError> {
