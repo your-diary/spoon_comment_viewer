@@ -17,6 +17,7 @@ use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::Rng;
+use regex::Regex;
 use thirtyfour_sync::error::WebDriverError;
 
 use super::bgm::BGM;
@@ -386,15 +387,17 @@ impl SpoonClient {
                     .take(5)
                     .collect_vec();
 
+                let re = Regex::new(r#"\d+秒"#).unwrap();
+
                 let s = format!(
                     "👑 ランキング\n{}",
                     ranker
                         .into_iter()
                         .enumerate()
                         .map(|(i, e)| format!(
-                            "{}. {} ({}回)",
+                            "{}. {}({}回)",
                             i + 1,
-                            util::pretty_print_duration(e.stay_duration),
+                            re.replace(&util::pretty_print_duration(e.stay_duration), ""),
                             e.visit_count
                         ))
                         .join("\n")
