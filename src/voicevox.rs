@@ -1,10 +1,12 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map::DefaultHasher, HashMap},
     fs,
+    hash::{Hash, Hasher},
+    path::Path,
     process::Command,
     sync::mpsc::{self, Receiver, Sender},
     thread,
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use log::{error, info};
@@ -48,6 +50,12 @@ fn player_thread(rx: Receiver<Audio>) {
     }
 }
 
+fn calculate_hash(s: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    s.hash(&mut hasher);
+    hasher.finish().to_string()
+}
+
 fn api_thread(rx: Receiver<APIRequest>, config: Config) {
     let config = config.voicevox;
 
@@ -64,32 +72,27 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
         //for English
         if (req.effect.pitch_for_english) {
-            let filepath = format!(
-                "{}/{}.mp3",
-                config.output_dir,
-                SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_micros()
-            );
+            let filepath = format!("{}/{}.mp3", config.output_dir, calculate_hash(&req.script));
 
-            let res = match Command::new("google_speech")
-                .args(["--output", &filepath, &req.script])
-                .output()
-            {
-                Ok(r) => r,
-                Err(e) => {
-                    error!("Failed to execute `google_speech`: {}", e);
+            if (!Path::new(&filepath).is_file()) {
+                let res = match Command::new("google_speech")
+                    .args(["--output", &filepath, &req.script])
+                    .output()
+                {
+                    Ok(r) => r,
+                    Err(e) => {
+                        error!("Failed to execute `google_speech`: {}", e);
+                        continue;
+                    }
+                };
+
+                if (!res.status.success()) {
+                    error!(
+                        "Non-zero exit status is returned from `google_speech`: {}",
+                        String::from_utf8(res.stderr).unwrap_or_default()
+                    );
                     continue;
                 }
-            };
-
-            if (!res.status.success()) {
-                error!(
-                    "Non-zero exit status is returned from `google_speech`: {}",
-                    String::from_utf8(res.stderr).unwrap_or_default()
-                );
-                continue;
             }
 
             let audio = Audio::new(&filepath, 2., req.effect);
@@ -105,85 +108,84 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
             params.insert("speed", &speed);
             params.insert("text", &req.script);
 
-            let res: Response = match client.get(&config.url).query(&params).send() {
-                Err(e) => {
-                    if (e.is_timeout()) {
-                        error!("VOICEVOX API timed out.");
-                    } else if (e.is_connect()) {
-                        error!("Failed to connect to VOICEVOX API.");
-                    } else {
-                        error!("Failed to send the request: {}", e);
-                    }
-                    continue;
-                }
-                Ok(r) => r,
-            };
-
-            let response_status = res.status();
-            let response_header = res.headers().clone();
-
-            if (!response_status.is_success()) {
-                match response_status {
-                    StatusCode::TOO_MANY_REQUESTS => {
-                        error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
-                        thread::sleep(Duration::from_millis(10000));
-                        while (rx.try_recv().is_ok()) {
-                            //discards
-                        }
-                    }
-                    StatusCode::FORBIDDEN => {
-                        error!(
-                            "`403 Forbidden` is returned from VOICEVOX API. This may be temporary."
-                        );
-                    }
-                    StatusCode::SERVICE_UNAVAILABLE => {
-                        error!(
-                            "`503 Service Unavailable` is returned from VOICEVOX API. This may be temporary."
-                        );
-                    }
-                    _ => {
-                        let body = res.text().unwrap_or_default();
-                        if (body.contains("notEnoughPoints")) {
-                            error!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
-                            return;
-                        } else if (body.contains(r#""errorMessage": "failed""#)) {
-                            error!("`failed` is returned from VOICEVOX API. This is expected to randomly occur.");
-                        } else {
-                            error!("Unknown error is returned from VOICEVOX API: {{ status: {}, body: {} }}", response_status, body);
-                        }
-                    }
-                }
-                continue;
-            }
-
-            let body = match res.bytes() {
-                Ok(r) => {
-                    if (r.is_empty()) {
-                        error!("Response from VOICEVOX API is unexpectedly empty.");
-                        error!("response header: {:?}", response_header);
-                        continue;
-                    } else {
-                        r
-                    }
-                }
-                Err(e) => {
-                    error!("Failed to read response from VOICEVOX API: {}", e);
-                    error!("response header: {:?}", response_header);
-                    continue;
-                }
-            };
-
             let filepath = format!(
                 "{}/{}.wav",
                 config.output_dir,
-                SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_micros()
+                calculate_hash(&format!("{}_{}_{}", speaker, speed, req.script))
             );
-            if let Err(e) = fs::write(&filepath, body) {
-                error!("Failed to write to the file [ {} ]: {}", filepath, e);
-                continue;
+            if (!Path::new(&filepath).is_file()) {
+                let res: Response = match client.get(&config.url).query(&params).send() {
+                    Err(e) => {
+                        if (e.is_timeout()) {
+                            error!("VOICEVOX API timed out.");
+                        } else if (e.is_connect()) {
+                            error!("Failed to connect to VOICEVOX API.");
+                        } else {
+                            error!("Failed to send the request: {}", e);
+                        }
+                        continue;
+                    }
+                    Ok(r) => r,
+                };
+
+                let response_status = res.status();
+                let response_header = res.headers().clone();
+
+                if (!response_status.is_success()) {
+                    match response_status {
+                        StatusCode::TOO_MANY_REQUESTS => {
+                            error!("`429 Too Many Requests` is returned from VOICEVOX API. Suspended for 10 seconds.");
+                            thread::sleep(Duration::from_millis(10000));
+                            while (rx.try_recv().is_ok()) {
+                                //discards
+                            }
+                        }
+                        StatusCode::FORBIDDEN => {
+                            error!(
+                            "`403 Forbidden` is returned from VOICEVOX API. This may be temporary."
+                        );
+                        }
+                        StatusCode::SERVICE_UNAVAILABLE => {
+                            error!(
+                            "`503 Service Unavailable` is returned from VOICEVOX API. This may be temporary."
+                        );
+                        }
+                        _ => {
+                            let body = res.text().unwrap_or_default();
+                            if (body.contains("notEnoughPoints")) {
+                                error!("`notEnoughPoints` is returned from VOICEVOX API. Thread terminated.");
+                                return;
+                            } else if (body.contains(r#""errorMessage": "failed""#)) {
+                                error!("`failed` is returned from VOICEVOX API. This is expected to randomly occur.");
+                            } else {
+                                error!("Unknown error is returned from VOICEVOX API: {{ status: {}, body: {} }}", response_status, body);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                let body = match res.bytes() {
+                    Ok(r) => {
+                        if (r.is_empty()) {
+                            error!("Response from VOICEVOX API is unexpectedly empty.");
+                            error!("response header: {:?}", response_header);
+                            continue;
+                        } else {
+                            r
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to read response from VOICEVOX API: {}", e);
+                        error!("response header: {:?}", response_header);
+                        continue;
+                    }
+                };
+
+                if let Err(e) = fs::write(&filepath, body) {
+                    error!("Failed to write to the file [ {} ]: {}", filepath, e);
+                    continue;
+                }
             }
 
             let audio = Audio::new(&filepath, 1., req.effect);
