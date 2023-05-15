@@ -339,6 +339,68 @@ impl SpoonClient {
                 );
                 self.spoon.post_comment(&s)?;
                 return Ok(false);
+            } else if (tokens[0] == "/rank") {
+                let ids = self
+                    .previous_listeners_map
+                    .iter()
+                    .filter(|(k, _)| k.nickname == user)
+                    .collect_vec();
+                if (ids.len() != 1) {
+                    self.spoon
+                        .post_comment(&format!("{}さんのランキングの取得に失敗しました", user))?;
+                    return Ok(false);
+                }
+                let id = ids[0].0.id;
+                let elapsed = ids[0].1.elapsed();
+
+                let all_entities = self
+                    .database
+                    .select_all()
+                    .into_iter()
+                    .sorted_by_key(|e| (e.stay_duration, e.visit_count))
+                    .rev()
+                    .collect_vec();
+
+                let index = all_entities
+                    .iter()
+                    .position(|entity| entity.id == id)
+                    .unwrap();
+
+                let s = format!(
+                    "👑 {}さん\nランキング: {}位/{}人中\n滞在時間: {}\n訪問回数: {}回",
+                    user,
+                    index + 1,
+                    all_entities.len(),
+                    util::pretty_print_duration(all_entities[index].stay_duration + elapsed),
+                    all_entities[index].visit_count,
+                );
+                self.spoon.post_comment(&s)?;
+                return Ok(false);
+            } else if (tokens[0] == "/ranking") {
+                let ranker = self
+                    .database
+                    .select_all()
+                    .into_iter()
+                    .sorted_by_key(|e| (e.stay_duration, e.visit_count))
+                    .rev()
+                    .take(5)
+                    .collect_vec();
+
+                let s = format!(
+                    "👑 ランキング\n{}",
+                    ranker
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, e)| format!(
+                            "{}. {} ({}回)",
+                            i + 1,
+                            util::pretty_print_duration(e.stay_duration),
+                            e.visit_count
+                        ))
+                        .join("\n")
+                );
+                self.spoon.post_comment(&s)?;
+                return Ok(false);
             } else if (tokens[0].starts_with('/')) {
                 let mut num_command = 0;
                 for token in &tokens {
