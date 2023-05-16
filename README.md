@@ -66,6 +66,16 @@
 
 ## 2.2 設定
 
+### 2.2.1 `google-speech`の設定 (英語の読み上げをしたい場合のみ)
+
+[`google-speech`](https://github.com/desbma/GoogleSpeech)では、読み上げ対象の英文が100文字ずつ区切られた上で処理される仕様になっており、100文字毎に不自然な無音が挟まります。これは`MAX_SEGMENT_SIZE`と呼ばれる定数により設定されていますが、カスタマイズ不可能なため([参考](https://github.com/desbma/GoogleSpeech/pull/27))、自然な結果を得るには手動で`200`などに値を変える必要があります。
+
+```bash
+$ vi "$(pip3 show google_speech | grep Location | sed 's/.* //')/google_speech/__init__.py"
+```
+
+### 2.2.2 設定ファイル
+
 プロジェクト配下の`./config.json`が設定ファイルです。テンプレートが同梱されているので、以下のコマンドでコピーして使ってください。
 
 ```bash
