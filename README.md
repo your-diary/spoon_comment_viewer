@@ -88,6 +88,8 @@ $ cp ./config_template.json ./config.json
 
 ハーコメなどの読み上げを有効にしたい場合は`voicevox`オブジェクトを設定します。読み上げには[WEB版VOICEVOX API](https://voicevox.su-shiki.com/su-shikiapis/)が使用されます。読み上げなどの際の禁止ワードは`forbidden_words`配列で設定することができます。
 
+`chatgpt.discord_url`は、ChatGPTから`insufficient_quota`エラーが返ってきたときにDiscordに通知を送信する用途で使用されます。
+
 それ以外の設定はデフォルト値のままで大丈夫です。
 
 ```json
@@ -167,8 +169,6 @@ $ cp ./config_template.json ./config.json
     }
 }
 ```
-
-<sub>(`chatgpt`オブジェクトについてはundocumentedですが、Rustで書かれていてかつ対話的なChatGPTクライアントのRustプロジェクトを`chatgpt.project_dir`フィールドに指定すれば、リスナーのコメントに対してChatGPTで自動返信することができます。クライアントは任意ですが、例えば[`your-diary/chatgpt`](https://github.com/your-diary/chatgpt)を使用できます。)</sub>
 
 ## 2.3 実行
 
