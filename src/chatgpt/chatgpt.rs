@@ -22,7 +22,9 @@ async fn caller(
 ) {
     let start = Instant::now();
     let res = (|| async {
-        for _ in 0..config.chatgpt.http.max_retry {
+        let mut has_retried = false;
+        loop {
+            let start = Instant::now();
             match call::call(&script.script, config.clone(), client.clone()).await {
                 Ok(s) => return s,
                 Err(e) => {
@@ -30,11 +32,20 @@ async fn caller(
                         return "QUOTA_ERROR".to_string();
                     } else {
                         error!("{}", e);
+                        if (!has_retried
+                            && (start.elapsed()
+                                < Duration::from_millis(config.chatgpt.http.timeout_ms / 3)))
+                        {
+                            info!("Retrying...");
+                            has_retried = true;
+                            continue;
+                        } else {
+                            return "ERROR".to_string();
+                        }
                     }
                 }
             }
         }
-        "ERROR".to_string()
     })()
     .await;
     let elapsed = start.elapsed();

@@ -157,8 +157,7 @@ $ cp ./config_template.json ./config.json
         "discord_url": "https://discord.com/api/webhooks/abcde/xyz",
         "http": {
             "url": "https://api.openai.com/v1/completions",
-            "timeout_ms": 12000,
-            "max_retry": 2
+            "timeout_ms": 30000
         },
         "model": {
             "model": "text-davinci-003",

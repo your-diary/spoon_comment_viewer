@@ -101,7 +101,6 @@ pub struct ChatGPT {
 pub struct HTTP {
     pub url: String,
     pub timeout_ms: u64,
-    pub max_retry: usize,
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
