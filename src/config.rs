@@ -90,8 +90,26 @@ pub struct VoiceVox {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ChatGPT {
     pub enabled: bool,
-    pub project_dir: String,
     pub excluded_user: String,
+    pub api_key: String,
+    pub discord_url: String,
+    pub http: HTTP,
+    pub model: Model,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct HTTP {
+    pub url: String,
+    pub timeout_ms: u64,
+    pub max_retry: usize,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct Model {
+    pub model: String,
+    pub temperature: f64,
+    pub max_tokens_en: usize,
+    pub max_tokens_ja: usize,
 }
 
 impl Config {
@@ -108,7 +126,6 @@ impl Config {
         };
 
         let mut ret: Self = serde_json::from_str(&json_string).unwrap();
-        util::canonicalize_path_in_place(&mut ret.chatgpt.project_dir);
         util::canonicalize_path_in_place(&mut ret.spoon.message_tunnel_file);
         util::canonicalize_path_in_place(&mut ret.spoon.live.bg_image);
         ret.spoon.live.bgm.audio_list.iter_mut().for_each(|e| {

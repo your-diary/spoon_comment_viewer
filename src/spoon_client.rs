@@ -5,6 +5,7 @@ use std::fs;
 use std::io;
 use std::io::Write;
 use std::path::Path;
+use std::process::Command;
 use std::rc::Rc;
 use std::thread;
 use std::time::Duration;
@@ -21,7 +22,7 @@ use regex::Regex;
 use thirtyfour_sync::error::WebDriverError;
 
 use super::bgm::BGM;
-use super::chatgpt::ChatGPT;
+use super::chatgpt::chatgpt::ChatGPT;
 use super::comment::CommentType;
 use super::config::Config;
 use super::constant;
@@ -597,6 +598,15 @@ impl SpoonClient {
             for e in self.chatgpt.fetch() {
                 let s = e.script.trim();
                 if (s == "QUOTA_ERROR") {
+                    let _ = Command::new("curl")
+                        .args([
+                            &self.config.chatgpt.discord_url,
+                            "-d",
+                            r#"{"wait": true, "content": "OpenAI API quota exceeded"}"#,
+                            "-H",
+                            "Content-Type: application/json",
+                        ])
+                        .status();
                     let s = "AI部分にエラーが発生しました。管理人に通知を送信しました。一分後、枠を終了します。申し訳ございません。";
                     self.spoon.post_comment(s)?;
                     if (self.config.voicevox.enabled) {

@@ -196,6 +196,7 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
 
 /*-------------------------------------*/
 
+#[derive(Clone)]
 pub struct Script {
     pub script: String,
     pub effect: AudioEffect,

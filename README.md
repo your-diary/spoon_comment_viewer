@@ -150,8 +150,20 @@ $ cp ./config_template.json ./config.json
     },
     "chatgpt": {
         "enabled": false,
-        "project_dir": "~/Build/chatgpt",
-        "excluded_user": "DJりな"
+        "excluded_user": "DJりな",
+        "api_key": "abcde",
+        "discord_url": "https://discord.com/api/webhooks/abcde/xyz",
+        "http": {
+            "url": "https://api.openai.com/v1/completions",
+            "timeout_ms": 12000,
+            "max_retry": 2
+        },
+        "model": {
+            "model": "text-davinci-003",
+            "temperature": 0.9,
+            "max_tokens_en": 30,
+            "max_tokens_ja": 140
+        }
     }
 }
 ```
