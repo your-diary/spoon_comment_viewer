@@ -200,10 +200,12 @@ impl ChatGPT {
             );
             ret.push(s.clone());
         }
-        println!(
-            "fetch: {:?}",
-            ((self.next_unread_index - ret.len())..self.next_unread_index).collect::<Vec<_>>()
-        ); //TODO
+        if (!ret.is_empty()) {
+            println!(
+                "fetch: {:?}",
+                ((self.next_unread_index - ret.len())..self.next_unread_index).collect::<Vec<_>>()
+            ); //TODO
+        }
         ret
     }
 }
