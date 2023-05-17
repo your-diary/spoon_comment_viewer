@@ -1,7 +1,7 @@
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use log::{error, info};
 use reqwest::header::HeaderMap;
@@ -20,6 +20,7 @@ async fn caller(
     config: Arc<Config>,
     client: Arc<Client>,
 ) {
+    let start = Instant::now();
     let res = (|| async {
         for _ in 0..config.chatgpt.http.max_retry {
             match call::call(&script.script, config.clone(), client.clone()).await {
@@ -36,11 +37,12 @@ async fn caller(
         "ERROR".to_string()
     })()
     .await;
+    let elapsed = start.elapsed();
 
     script.script = res;
 
     let mut buf = buf.lock().unwrap();
-    println!("write: {}", index); //TODO
+    println!("write: {} ({}ms)", index, elapsed.as_millis()); //TODO
     buf[index] = Some(script);
 }
 
@@ -67,7 +69,7 @@ async fn chatgpt_thread(
 
     loop {
         let (index, script) = rx.recv().unwrap();
-        println!("call: ({}, {})", index, script.script); //TODO
+        println!("call: {}", index); //TODO
         tokio::spawn(caller(
             index,
             script,
