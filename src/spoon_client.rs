@@ -266,19 +266,6 @@ impl SpoonClient {
                 self.spoon.post_comment(&s)?;
                 return Ok(());
             } else if (tokens[0] == "/rank") {
-                let ids = self
-                    .previous_listeners_map
-                    .iter()
-                    .filter(|(k, _)| k.nickname == *user)
-                    .collect_vec();
-                if (ids.len() != 1) {
-                    self.spoon
-                        .post_comment(&format!("{}さんのランキングの取得に失敗しました", user))?;
-                    return Ok(());
-                }
-                let id = ids[0].0.id;
-                let elapsed = ids[0].1.elapsed();
-
                 let all_entities = self
                     .database
                     .select_all()
@@ -289,8 +276,16 @@ impl SpoonClient {
 
                 let index = all_entities
                     .iter()
-                    .position(|entity| entity.id == id)
+                    .position(|entity| entity.id == *id as usize)
                     .unwrap();
+
+                let elapsed = self
+                    .previous_listeners_map
+                    .iter()
+                    .find(|(k, _)| k.id == *id as usize)
+                    .unwrap()
+                    .1
+                    .elapsed();
 
                 let s = format!(
                     "👑 {}さん\nランキング: {}位/{}人中\n滞在時間: {}\n訪問回数: {}回",
