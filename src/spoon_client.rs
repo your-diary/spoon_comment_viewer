@@ -414,8 +414,6 @@ impl SpoonClient {
         let guide_5 = Duration::from_secs(3600 * 2 - 5 * 60);
         let guide_1 = Duration::from_secs(3600 * 2 - 60);
 
-        let mut should_call_over = self.config.spoon.should_call_over;
-
         let message = if ((elapsed > guide_10) && !self.guide_flags[0]) {
             self.guide_flags[0] = true;
             "配信終了10分前だよ"
@@ -424,7 +422,6 @@ impl SpoonClient {
             "配信終了5分前だよ"
         } else if ((elapsed > guide_1) && !self.guide_flags[2]) {
             self.guide_flags[2] = true;
-            should_call_over &= true;
             "配信終了1分前だよ"
         } else {
             return Ok(());
@@ -442,7 +439,7 @@ impl SpoonClient {
             }
         }
 
-        if (should_call_over) {
+        if (message.contains("1分前") && self.config.spoon.should_call_over) {
             self.call_over()?;
         }
 
