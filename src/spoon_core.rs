@@ -86,10 +86,12 @@ impl Spoon {
         //background image
         //|https://stackoverflow.com/questions/11256732/how-to-handle-windows-file-upload-using-selenium-webdriver|
         if let Some(bg_image) = bg_image {
+            thread::sleep(std::time::Duration::from_millis(100));
             if (!Path::new(bg_image).is_file()) {
                 return Err(format!("bg image [ {} ] not found", bg_image).into());
             }
-            self.z.input("input.input-file", bg_image)?
+            self.z.input("input.input-file", bg_image)?;
+            thread::sleep(std::time::Duration::from_millis(100));
         }
 
         Ok(())
