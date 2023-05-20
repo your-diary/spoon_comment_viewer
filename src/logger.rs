@@ -82,6 +82,7 @@ impl Logger {
         Ok(())
     }
 
+    //This method is slow; it takes around 50ms.
     pub fn log(&mut self, color: Option<&str>, s: &str) -> Result<(), Box<dyn Error>> {
         self.refresh()?;
 

@@ -133,6 +133,7 @@ impl Spoon {
         unreachable!();
     }
 
+    //This method is slow; it takes around 300ms.
     pub fn post_comment(&self, s: &str) -> Result<(), WebDriverError> {
         //As each comment is truncated to at most 100 characters (in Unicode) in Spoon, we avoid information's being lost by explicitly splitting a comment.
         for mut s in s.chars().chunks(100).into_iter() {

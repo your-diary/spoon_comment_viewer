@@ -82,20 +82,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        let ins = Instant::now();
-        let s = spoon.process_comments();
-        if (ins.elapsed() > Duration::from_millis(1)) {
-            println!("{:?}", ins.elapsed());
+        if let Err(e) = spoon.process_comments() {
+            error!("{}", e);
+            continue;
         }
-        if let Err(s) = s {
-            error!("{}", s);
-        }
-
-        //TODO
-        //         if let Err(e) = spoon.process_comments() {
-        //             error!("{}", e);
-        //             continue;
-        //         }
     }
 
     Ok(())
