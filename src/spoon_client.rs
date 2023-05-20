@@ -288,12 +288,13 @@ impl SpoonClient {
                     .elapsed();
 
                 let s = format!(
-                    "👑 {}さん\nランキング: {}位/{}人中\n滞在時間: {}\n訪問回数: {}回",
+                    "👑 {}さん\nランキング: {}位/{}人中\n滞在時間: {}\n訪問回数: {}回\n常連度: {}",
                     user,
                     index + 1,
                     all_entities.len(),
                     util::pretty_print_duration(all_entities[index].stay_duration + elapsed),
                     all_entities[index].visit_count,
+                    o.data.user.regular_score,
                 );
                 self.spoon.post_comment(&s)?;
                 return Ok(());
