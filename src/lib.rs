@@ -1,14 +1,16 @@
 pub mod bgm;
 pub mod chatgpt;
-pub mod comment;
 pub mod config;
 pub mod constant;
 pub mod database;
 pub mod filter;
 pub mod listener;
+pub mod logger;
+pub mod models;
 pub mod player;
 pub mod selenium;
 pub mod spoon_client;
 pub mod spoon_core;
 pub mod util;
 pub mod voicevox;
+pub mod websocket;

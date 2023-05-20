@@ -53,7 +53,7 @@ async fn caller(
     script.script = res;
 
     let mut buf = buf.lock().unwrap();
-    println!("write: {} ({}ms)", index, elapsed.as_millis()); //TODO
+    info!("ChatGPT: {}ms", elapsed.as_millis());
     buf[index] = Some(script);
 }
 
@@ -80,7 +80,6 @@ async fn chatgpt_thread(
 
     loop {
         let (index, script) = rx.recv().unwrap();
-        println!("call: {}", index); //TODO
         tokio::spawn(caller(
             index,
             script,
@@ -188,7 +187,6 @@ impl ChatGPT {
             );
             script.script = sanitized;
         }
-        println!("push: ({}, {})", self.next_index, script.script); //TODO
         self.tx
             .as_ref()
             .unwrap()
@@ -212,12 +210,6 @@ impl ChatGPT {
                 self.config.chatgpt.model.max_tokens_ja,
             );
             ret.push(s.clone());
-        }
-        if (!ret.is_empty()) {
-            println!(
-                "fetch: {:?}",
-                ((self.next_unread_index - ret.len())..self.next_unread_index).collect::<Vec<_>>()
-            ); //TODO
         }
         ret
     }

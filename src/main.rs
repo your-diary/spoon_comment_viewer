@@ -58,35 +58,44 @@ fn main() -> Result<(), Box<dyn Error>> {
     spoon.init()?;
 
     let start = Instant::now();
-    let mut c = -1isize;
+    let mut timer = Instant::now();
     loop {
-        c += 1;
+        thread::sleep(Duration::from_millis(
+            config.spoon.comment_check_interval_ms,
+        ));
 
         if ((start.elapsed() > Duration::from_secs(3600 * 2 + 5)) || rx.try_recv().is_ok()) {
             break;
         }
 
-        thread::sleep(Duration::from_millis(
-            config.spoon.comment_check_interval_ms,
-        ));
+        if (timer.elapsed() > Duration::from_millis(config.spoon.listener_check_interval_ms)) {
+            timer = Instant::now();
 
-        if let Err(e) = spoon.process_comments() {
-            error!("{}", e);
-            continue;
-        }
+            println!("listener"); //TODO
 
-        //checks listeners every `comment_check_interval_ms * listener_check_interval_ratio` milliseconds
-        if ((c as usize) % config.spoon.listener_check_interval_ratio == 0) {
             if let Err(e) = spoon.process_listeners(&config) {
+                error!("{}", e);
+                continue;
+            }
+
+            if let Err(e) = spoon.process_message_tunnel() {
                 error!("{}", e);
                 continue;
             }
         }
 
-        if let Err(e) = spoon.process_message_tunnel() {
-            error!("{}", e);
-            continue;
+        let ins = Instant::now();
+        let s = spoon.process_comments();
+        println!("{:?}", ins.elapsed());
+        if let Err(s) = s {
+            error!("{}", s);
         }
+
+        //TODO
+        //         if let Err(e) = spoon.process_comments() {
+        //             error!("{}", e);
+        //             continue;
+        //         }
     }
 
     Ok(())

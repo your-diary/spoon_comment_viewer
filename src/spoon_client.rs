@@ -11,24 +11,27 @@ use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 
-use chrono::Local;
 use itertools::Itertools;
 use log::error;
+use log::info;
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use regex::Regex;
+use serde_json::Map;
+use serde_json::Value;
 use thirtyfour_sync::error::WebDriverError;
 
 use super::bgm::BGM;
-use super::chatgpt::chatgpt::ChatGPT;
-use super::comment::CommentType;
+use super::chatgpt::ChatGPT;
 use super::config::Config;
 use super::constant;
 use super::database::{Database, ListenerEntity};
 use super::filter::Filter;
 use super::listener::Listener;
+use super::logger::Logger;
+use super::models::*;
 use super::player::Audio;
 use super::player::AudioEffect;
 use super::selenium::Selenium;
@@ -36,122 +39,20 @@ use super::spoon_core::Spoon;
 use super::util;
 use super::voicevox::Script;
 use super::voicevox::VoiceVox;
-
-/*-------------------------------------*/
-
-struct Logger {
-    z: Rc<Selenium>,
-
-    timestamp: String,
-    ranking: String,
-    num_spoon: String,
-    num_heart: String,
-    num_current_listener: String,
-    num_total_listener: String,
-}
-
-impl Logger {
-    fn new(z: Rc<Selenium>) -> Self {
-        Self {
-            z,
-
-            timestamp: String::new(),
-            ranking: String::new(),
-            num_spoon: String::new(),
-            num_heart: String::new(),
-            num_current_listener: String::new(),
-            num_total_listener: String::new(),
-        }
-    }
-
-    fn refresh(&mut self) -> Result<(), Box<dyn Error>> {
-        self.timestamp = self
-            .z
-            .inner_text(".time-chip-container span")?
-            .trim()
-            .to_string();
-        if (self.timestamp.len() == 5) {
-            self.timestamp = format!("00:{}", self.timestamp);
-        }
-
-        let count_info_list = self.z.query_all("ul.count-info-list li")?;
-        let mut count_info_list_str = vec![];
-        for e in count_info_list {
-            count_info_list_str.push(e.text()?.trim().to_string());
-        }
-        match count_info_list_str.len() {
-            //followers-only stream (ranking is not shown)
-            4 => {
-                count_info_list_str.insert(0, "?".to_string());
-            }
-            //normal streaming
-            5 => {
-                //do nothing
-            }
-            _ => {
-                error!(
-                    "`count_info_list` is of an unexpected form. Its length is {}.",
-                    count_info_list_str.len()
-                );
-                for _ in 0..(5 - count_info_list_str.len()) {
-                    count_info_list_str.insert(0, "?".to_string());
-                }
-            }
-        }
-        (
-            self.ranking,
-            self.num_spoon,
-            self.num_heart,
-            self.num_current_listener,
-            self.num_total_listener,
-        ) = (
-            count_info_list_str[0].clone(),
-            count_info_list_str[1].clone(),
-            count_info_list_str[2].clone(),
-            count_info_list_str[3].clone(),
-            count_info_list_str[4].clone(),
-        );
-
-        Ok(())
-    }
-
-    fn log(&mut self, color: Option<&str>, s: &str) -> Result<(), Box<dyn Error>> {
-        self.refresh()?;
-
-        println!(
-            "{}[{} ({}) ({}/{}/{}/{}/{})]{}{} {}{}",
-            constant::COLOR_BLACK,
-            Local::now().format("%H:%M:%S"),
-            self.timestamp,
-            self.ranking,
-            self.num_spoon,
-            self.num_heart,
-            self.num_current_listener,
-            self.num_total_listener,
-            constant::NO_COLOR,
-            color.unwrap_or_default(),
-            s.replace('\n', "\\n"), //makes it a single line
-            if (color.is_some()) {
-                constant::NO_COLOR
-            } else {
-                ""
-            }
-        );
-
-        Ok(())
-    }
-}
-
-/*-------------------------------------*/
+use super::websocket::WebSocket;
 
 pub struct SpoonClient {
     spoon: Spoon,
+    websocket: WebSocket,
 
     config: Rc<Config>,
 
     logger: Logger,
 
     rng: ThreadRng,
+
+    elapsed: Instant,
+    guide_flags: Vec<bool>,
 
     database: Database,
 
@@ -185,12 +86,17 @@ impl SpoonClient {
 
         Self {
             spoon: Spoon::new(z.clone(), Duration::from_millis(3000)),
+            websocket: WebSocket::new(),
 
             config,
 
             logger: Logger::new(z.clone()),
 
             rng: rand::thread_rng(),
+
+            elapsed: Instant::now(),
+            guide_flags: vec![false; 3],
+
             database,
             chatgpt,
             voicevox,
@@ -260,12 +166,29 @@ impl SpoonClient {
     }
 
     pub fn init(&mut self) -> Result<(), Box<dyn Error>> {
-        self.spoon.update_live_id()
+        let live_id = self.spoon.update_live_id()?;
+        self.websocket.connect(live_id)?;
+        self.elapsed = Instant::now();
+        Ok(())
     }
 
-    fn process_message_comment(&mut self, user: &str, text: &str) -> Result<bool, Box<dyn Error>> {
-        if (user == self.config.chatgpt.excluded_user) {
-            return Ok(true);
+    fn process_message_comment(&mut self, o: LiveMessage) -> Result<(), Box<dyn Error>> {
+        let text = &o.update_component.message.value;
+        let user = &o.data.user.nickname;
+
+        self.logger.log(
+            None,
+            &format!(
+                "{}{}:{} {}",
+                constant::COLOR_PURPLE,
+                user,
+                constant::NO_COLOR,
+                text,
+            ),
+        )?;
+
+        if (user == &self.config.chatgpt.excluded_user) {
+            return Ok(());
         }
 
         let mut comment_text = text.to_string();
@@ -285,7 +208,7 @@ impl SpoonClient {
                     self.voicevox
                         .say(Script::new(s, AudioEffect::default(), speaker));
                 }
-                return Ok(false);
+                return Ok(());
             }
             let audio_list = &self.config.spoon.live.bgm.audio_list[1..];
             let bgm = audio_list.choose(&mut self.rng).unwrap();
@@ -304,11 +227,11 @@ impl SpoonClient {
             if (tokens[0] == "help") {
                 let s = "help ではなくスラッシュを先頭に付けて\n/help と打ってみてね。";
                 self.spoon.post_comment(s)?;
-                return Ok(false);
+                return Ok(());
             } else if (tokens[0] == "/help") {
                 let s = "[💡ヘルプ]\necho, asmr, zundamon のどれかを\n「/echo　こんにちは」\nのように使ってみてね。\n\n「/bgm」でBGMを変更できるよ。";
                 self.spoon.post_comment(s)?;
-                return Ok(false);
+                return Ok(());
             } else if (tokens[0] == "/fortune") {
                 let fortune_names = vec![
                     "総合運",
@@ -340,17 +263,17 @@ impl SpoonClient {
                         .join("\n")
                 );
                 self.spoon.post_comment(&s)?;
-                return Ok(false);
+                return Ok(());
             } else if (tokens[0] == "/rank") {
                 let ids = self
                     .previous_listeners_map
                     .iter()
-                    .filter(|(k, _)| k.nickname == user)
+                    .filter(|(k, _)| k.nickname == *user)
                     .collect_vec();
                 if (ids.len() != 1) {
                     self.spoon
                         .post_comment(&format!("{}さんのランキングの取得に失敗しました", user))?;
-                    return Ok(false);
+                    return Ok(());
                 }
                 let id = ids[0].0.id;
                 let elapsed = ids[0].1.elapsed();
@@ -377,7 +300,7 @@ impl SpoonClient {
                     all_entities[index].visit_count,
                 );
                 self.spoon.post_comment(&s)?;
-                return Ok(false);
+                return Ok(());
             } else if (tokens[0] == "/ranking") {
                 let ranker = self
                     .database
@@ -404,7 +327,7 @@ impl SpoonClient {
                         .join("\n")
                 );
                 self.spoon.post_comment(&s)?;
-                return Ok(false);
+                return Ok(());
             } else if (tokens[0].starts_with('/')) {
                 let mut num_command = 0;
                 for token in &tokens {
@@ -453,7 +376,7 @@ impl SpoonClient {
                                                 )
                             };
                             self.spoon.post_comment(&s)?;
-                            return Ok(false);
+                            return Ok(());
                         }
                     }
                 }
@@ -465,7 +388,7 @@ impl SpoonClient {
                         command,
                     );
                     self.spoon.post_comment(&s)?;
-                    return Ok(false);
+                    return Ok(());
                 }
                 for _ in 0..num_command {
                     tokens.remove(0);
@@ -480,28 +403,53 @@ impl SpoonClient {
             ));
         }
 
-        Ok(true)
+        Ok(())
     }
 
-    fn process_guide_comment(&mut self, text: &str) -> Result<(), Box<dyn Error>> {
-        let c = text.replace("分前だよ！", "分前だよ");
-        self.logger.log(Some(constant::COLOR_WHITE), &c)?;
-        if ((c.contains("10分前だよ") || c.contains("5分前だよ") || c.contains("1分前だよ"))
-            && self.config.spoon.should_comment_guide)
-        {
-            self.spoon.post_comment(&c)?;
+    fn process_guide(&mut self) -> Result<(), Box<dyn Error>> {
+        let elapsed = self.elapsed.elapsed();
+
+        let guide_10 = Duration::from_secs(3600 * 2 - 10 * 60);
+        let guide_5 = Duration::from_secs(3600 * 2 - 5 * 60);
+        let guide_1 = Duration::from_secs(3600 * 2 - 60);
+
+        let mut should_call_over = self.config.spoon.should_call_over;
+
+        let message = if ((elapsed > guide_10) && !self.guide_flags[0]) {
+            self.guide_flags[0] = true;
+            "配信終了10分前だよ"
+        } else if ((elapsed > guide_5) && !self.guide_flags[1]) {
+            self.guide_flags[1] = true;
+            "配信終了5分前だよ"
+        } else if ((elapsed > guide_1) && !self.guide_flags[2]) {
+            self.guide_flags[2] = true;
+            should_call_over &= true;
+            "配信終了1分前だよ"
+        } else {
+            return Ok(());
+        };
+
+        self.logger.log(Some(constant::COLOR_WHITE), message)?;
+        if (self.config.spoon.should_comment_guide) {
+            self.spoon.post_comment(message)?;
             if (self.config.voicevox.enabled) {
                 self.voicevox.say(Script::new(
-                    &c,
+                    message,
                     AudioEffect::default(),
                     self.config.voicevox.speaker,
                 ));
             }
         }
+
+        if (should_call_over) {
+            self.call_over()?;
+        }
+
         Ok(())
     }
 
-    fn process_like_comment(&mut self, user: &str) -> Result<(), Box<dyn Error>> {
+    fn process_like_comment(&mut self, o: LiveLike) -> Result<(), Box<dyn Error>> {
+        let user = o.data.author.nickname;
         let c = format!("{}さん、ハートありがとう。", user);
         self.logger.log(Some(constant::COLOR_YELLOW), &c)?;
         if (self.config.spoon.should_comment_heart) {
@@ -520,22 +468,35 @@ impl SpoonClient {
         Ok(())
     }
 
-    fn process_present_comment(&mut self, user: &str, text: &str) -> Result<(), Box<dyn Error>> {
-        let (color, present_name) = if (text.starts_with("ハート")) {
-            (constant::COLOR_RED, "バスター")
-        } else if (text.starts_with("心ばかりの粗品")) {
-            (constant::COLOR_RED, "粗品")
+    fn process_use_item_comment(&mut self, o: UseItem) -> Result<(), Box<dyn Error>> {
+        let user = o.data.user.nickname;
+        let (item_id, effect, amount) = match o.use_items.get(0) {
+            None => return Err("`use_items` is empty".into()),
+            Some(l) => (l.item_id, &l.effect, l.amount),
+        };
+
+        let item_name = if (item_id == 34) {
+            "粗品"
+        } else if (effect == "LIKE") {
+            "バスター"
         } else {
-            (constant::COLOR_CYAN, "スプーン")
+            "謎のアイテム"
         };
 
         self.logger.log(
             None,
-            &format!("{}{}:{} {}", color, user, constant::NO_COLOR, text),
+            &format!(
+                "{}{}:{} {} {}",
+                constant::COLOR_RED,
+                user,
+                constant::NO_COLOR,
+                amount,
+                item_name
+            ),
         )?;
 
         if (self.config.spoon.should_comment_spoon) {
-            let s = format!("{}さん、{}ありがとう。", user, present_name);
+            let s = format!("{}さん、{}ありがとう。", user, item_name);
             self.spoon.post_comment(&s)?;
             if (self.config.voicevox.enabled) {
                 self.voicevox.say(Script::new(
@@ -552,19 +513,69 @@ impl SpoonClient {
         Ok(())
     }
 
-    fn process_block_comment(&mut self, user: &str) -> Result<(), Box<dyn Error>> {
-        let c = format!("{}さんが強制退室になったよ。", user);
-        self.logger.log(Some(constant::COLOR_RED), &c)?;
-        if (self.config.spoon.should_comment_block) {
-            self.spoon.post_comment(&c)?;
+    fn process_present_like_comment(&mut self, o: LivePresentLike) -> Result<(), Box<dyn Error>> {
+        let user = o.data.user.nickname;
+        let amount = o.update_component.like.amount * o.update_component.like.combo;
+
+        self.logger.log(
+            None,
+            &format!(
+                "{}{}:{} {} ハート",
+                constant::COLOR_RED,
+                user,
+                constant::NO_COLOR,
+                amount
+            ),
+        )?;
+
+        if (self.config.spoon.should_comment_spoon) {
+            let s = format!("{}さん、バスターありがとう。", user);
+            self.spoon.post_comment(&s)?;
             if (self.config.voicevox.enabled) {
                 self.voicevox.say(Script::new(
-                    &c,
-                    AudioEffect::default(),
+                    &s,
+                    AudioEffect {
+                        reverb: true,
+                        ..Default::default()
+                    },
                     self.config.voicevox.speaker,
                 ));
             }
         }
+
+        Ok(())
+    }
+
+    fn process_present_comment(&mut self, o: LivePresent) -> Result<(), Box<dyn Error>> {
+        let user = o.data.author.nickname;
+        let amount = o.data.amount * o.data.combo;
+
+        self.logger.log(
+            None,
+            &format!(
+                "{}{}:{} {} Spoon",
+                constant::COLOR_CYAN,
+                user,
+                constant::NO_COLOR,
+                amount
+            ),
+        )?;
+
+        if (self.config.spoon.should_comment_spoon) {
+            let s = format!("{}さん、スプーンありがとう。", user);
+            self.spoon.post_comment(&s)?;
+            if (self.config.voicevox.enabled) {
+                self.voicevox.say(Script::new(
+                    &s,
+                    AudioEffect {
+                        reverb: true,
+                        ..Default::default()
+                    },
+                    self.config.voicevox.speaker,
+                ));
+            }
+        }
+
         Ok(())
     }
 
@@ -594,6 +605,8 @@ impl SpoonClient {
     }
 
     pub fn process_comments(&mut self) -> Result<(), Box<dyn Error>> {
+        self.process_guide().unwrap_or_else(|e| error!("{}", e));
+
         if (self.config.chatgpt.enabled) {
             for e in self.chatgpt.fetch() {
                 let s = e.script.trim();
@@ -608,7 +621,7 @@ impl SpoonClient {
                         ])
                         .status();
                     let s = "AI部分にエラーが発生しました。管理人に通知を送信しました。一分後、枠を終了します。申し訳ございません。";
-                    self.spoon.post_comment(s)?;
+                    let _ = self.spoon.post_comment(s);
                     if (self.config.voicevox.enabled) {
                         self.voicevox.say(Script::new(s, e.effect, e.speaker));
                     }
@@ -616,7 +629,9 @@ impl SpoonClient {
                     let _ = self.z.close();
                     thread::sleep(Duration::from_secs(60 * 60 * 24 * 31));
                 } else {
-                    self.spoon.post_comment(s)?;
+                    self.spoon
+                        .post_comment(s)
+                        .unwrap_or_else(|e| error!("{}", e));
                     if (self.config.voicevox.enabled) {
                         self.voicevox.say(Script::new(s, e.effect, e.speaker));
                     }
@@ -624,58 +639,124 @@ impl SpoonClient {
             }
         }
 
-        let comments = self.spoon.retrieve_new_comments()?;
+        let comments = self.websocket.fetch();
 
         if (comments.is_empty()) {
             return Ok(());
         }
 
-        //With a small enough check interval, it is unexpected `num_new_comment` has a large value.
-        //However, it sometimes happened for some reason: at that time, it seemed the already processed comments in the past were mistakenly treated as new comments.
-        //The cause is unknown but we suspect `element_id` may be reassigned by a bug of Spoon or Selenium.
-        if (comments.len() >= 15) {
-            error!(
-                "The value of `num_new_comment` is too large: {}. Ignoring them...",
-                comments.len()
-            );
-            return Ok(());
-        }
+        for s in comments {
+            //for performance
+            if (s.starts_with(r#"{"event":"live_update","#)
+                || s.starts_with(r#"{"event":"live_rank","#))
+            {
+                continue;
+            }
 
-        for e in comments {
-            let user = e.user();
-            let text = e.text();
-
-            match e.comment_type() {
-                CommentType::Message | CommentType::Combo => {
-                    self.logger.log(None, &e.to_string())?;
-                    if (!self.process_message_comment(user.unwrap(), text.unwrap())?) {
+            let m: Map<String, Value> = match serde_json::from_str::<Value>(&s) {
+                Ok(v) => match v.as_object() {
+                    Some(m) => m.clone(),
+                    None => {
+                        error!("WebSocket message is not a JSON object: {}", v);
                         continue;
                     }
+                },
+                Err(e) => {
+                    error!("WebSocket message is not JSON: {} in {}", e, s);
+                    continue;
                 }
+            };
 
-                CommentType::Guide => {
-                    self.process_guide_comment(text.unwrap())?;
-
-                    //点呼
-                    if (text.unwrap().contains("1分前だよ") && self.config.spoon.should_call_over)
-                    {
-                        self.call_over()?;
-                    }
+            let event_type = match m.get("event") {
+                None => {
+                    error!("no event field found in object: {}", s);
+                    continue;
                 }
-
-                CommentType::Like => {
-                    self.process_like_comment(user.unwrap())?;
+                Some(Value::String(s)) => s,
+                _ => {
+                    error!("event field is not a string: {}", s);
+                    continue;
                 }
+            };
 
-                CommentType::Present => {
-                    self.process_present_comment(user.unwrap(), text.unwrap())?;
+            match event_type.as_str() {
+                "live_join" => {
+                    let o = match serde_json::from_str::<LiveJoin>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    assert_eq!("success", o.result.detail);
+                    info!("WebSocket connection succeeded.");
                 }
-
-                CommentType::Block => {
-                    self.process_block_comment(user.unwrap())?;
+                "live_rank" => (),
+                "live_update" => (),
+                //comment
+                "live_message" => {
+                    let o = match serde_json::from_str::<LiveMessage>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    self.process_message_comment(o)
+                        .unwrap_or_else(|e| error!("{}", e));
                 }
-
-                CommentType::Unknown => continue,
+                //heart
+                "live_like" => {
+                    let o = match serde_json::from_str::<LiveLike>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    self.process_like_comment(o)
+                        .unwrap_or_else(|e| error!("{}", e));
+                }
+                //粗品
+                "use_item" => {
+                    let o = match serde_json::from_str::<UseItem>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    self.process_use_item_comment(o)
+                        .unwrap_or_else(|e| error!("{}", e));
+                }
+                //buster
+                "live_present_like" => {
+                    let o = match serde_json::from_str::<LivePresentLike>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    self.process_present_like_comment(o)
+                        .unwrap_or_else(|e| error!("{}", e));
+                }
+                //spoon
+                "live_present" => {
+                    let o = match serde_json::from_str::<LivePresent>(&s) {
+                        Ok(o) => o,
+                        Err(e) => {
+                            error!("deserialization error: {} in {}", e, s);
+                            continue;
+                        }
+                    };
+                    self.process_present_comment(o)
+                        .unwrap_or_else(|e| error!("{}", e));
+                }
+                t => {
+                    error!("unknown event type: {} in {}", t, s);
+                    continue;
+                }
             }
         }
 

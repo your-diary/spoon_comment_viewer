@@ -29,7 +29,7 @@ pub struct Twitter {
 pub struct Spoon {
     pub url: String,
     pub comment_check_interval_ms: u64,
-    pub listener_check_interval_ratio: usize,
+    pub listener_check_interval_ms: u64,
     pub should_comment_listener: bool,
     pub should_comment_heart: bool,
     pub should_comment_spoon: bool,

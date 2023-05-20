@@ -1,4 +1,6 @@
-pub mod call;
+mod call;
 #[allow(clippy::module_inception)]
-pub mod chatgpt;
-pub mod util;
+mod chatgpt;
+mod util;
+
+pub use chatgpt::ChatGPT;

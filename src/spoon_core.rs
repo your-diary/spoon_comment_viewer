@@ -2,14 +2,10 @@ use std::thread;
 use std::{error::Error, path::Path, rc::Rc, time::Duration};
 
 use itertools::Itertools;
-use log::{error, info};
-use regex::Regex;
+use log::info;
 use reqwest::blocking::Client;
 use thirtyfour_sync::error::WebDriverError;
-use thirtyfour_sync::ElementId;
 
-use super::comment::Comment;
-use super::comment::CommentType;
 use super::listener::{Listener, Listeners};
 use super::selenium::Selenium;
 
@@ -17,8 +13,6 @@ pub struct Spoon {
     z: Rc<Selenium>,
     http_client: Client,
     live_id: u64,
-    previous_commenter: String, //for combo comment
-    existing_comments: Vec<ElementId>,
 }
 
 impl Spoon {
@@ -30,8 +24,6 @@ impl Spoon {
                 .build()
                 .unwrap(),
             live_id: 0,
-            previous_commenter: String::new(),
-            existing_comments: Vec::with_capacity(1000),
         }
     }
 
@@ -107,7 +99,7 @@ impl Spoon {
         self.z.click("button.btn-create").map_err(|e| e.into())
     }
 
-    pub fn update_live_id(&mut self) -> Result<(), Box<dyn Error>> {
+    pub fn update_live_id(&mut self) -> Result<u64, Box<dyn Error>> {
         let f = || {
             self.z.execute_javascript(
                 "return JSON.parse(window.localStorage.SPOONCAST_liveBroadcastOnair).liveId;",
@@ -129,7 +121,8 @@ impl Spoon {
                 match n.as_u64() {
                     Some(id) => {
                         self.live_id = id;
-                        return Ok(());
+                        info!("live_id: {}", self.live_id);
+                        return Ok(self.live_id);
                     }
                     None => return Err("Failed to parse the live id as number.".into()),
                 }
@@ -148,129 +141,6 @@ impl Spoon {
             self.z.click("button[title='送信']")?;
         }
         Ok(())
-    }
-
-    pub fn retrieve_new_comments(&mut self) -> Result<Vec<Comment>, WebDriverError> {
-        let mut ret = vec![];
-
-        let l = self.z.query_all("li.chat-list-item")?;
-
-        let num_new_comment = if (self.existing_comments.is_empty()) {
-            l.len()
-        } else if let Some(i) = l
-            .iter()
-            .rposition(|e| &e.element_id == self.existing_comments.last().unwrap())
-        {
-            l.len() - (i + 1)
-        } else {
-            l.len()
-        };
-
-        if (num_new_comment == 0) {
-            return Ok(vec![]);
-        }
-
-        for e in l.iter().skip(l.len() - num_new_comment) {
-            let element_id = e.element_id.clone();
-
-            self.existing_comments.push(element_id.clone());
-
-            let inner_text = match e.text() {
-                Ok(s) => s,
-                Err(_) => continue,
-            };
-
-            let class_name = match e.class_name() {
-                Err(e) => {
-                    error!("{}", e);
-                    continue;
-                }
-                Ok(s) => s,
-            };
-
-            let comment_type = CommentType::new(class_name);
-
-            match comment_type {
-                CommentType::Message | CommentType::Combo => {
-                    let is_combo = comment_type == CommentType::Combo;
-
-                    let comment = if (is_combo) {
-                        Comment::new(
-                            element_id,
-                            comment_type,
-                            Some(self.previous_commenter.clone()),
-                            Some(inner_text.clone()),
-                        )
-                    } else {
-                        let tokens = inner_text.splitn(2, '\n').collect_vec();
-                        if (tokens.len() != 2) {
-                            error!("Comment [ {} ] has an unexpected form.", inner_text);
-                            continue;
-                        }
-                        Comment::new(
-                            element_id,
-                            comment_type,
-                            Some(tokens[0].to_string()),
-                            Some(tokens[1].to_string()),
-                        )
-                    };
-
-                    if (!is_combo) {
-                        self.previous_commenter = String::from(comment.user().unwrap());
-                    }
-
-                    ret.push(comment);
-                }
-
-                CommentType::Guide => {
-                    ret.push(Comment::new(
-                        element_id,
-                        comment_type,
-                        None,
-                        Some(inner_text.clone()),
-                    ));
-                }
-
-                //`buster` is categorized as `CommentType::Present`
-                CommentType::Like => {
-                    ret.push(Comment::new(
-                        element_id,
-                        comment_type,
-                        Some(inner_text.replace("さんがハートを押したよ！", "")),
-                        None,
-                    ));
-                }
-
-                //includes `buster`
-                CommentType::Present => {
-                    let pat = Regex::new(r#"^([^\n]*)\n+(.*Spoon.*|ハート.*|心ばかりの粗品.*)$"#)
-                        .unwrap();
-                    if let Some(groups) = pat.captures(&inner_text) {
-                        let user = groups.get(1).unwrap().as_str().to_string();
-                        let text = groups.get(2).unwrap().as_str().to_string();
-                        ret.push(Comment::new(
-                            element_id,
-                            comment_type,
-                            Some(user),
-                            Some(text),
-                        ));
-                    }
-                }
-
-                CommentType::Block => {
-                    ret.push(Comment::new(
-                        element_id,
-                        comment_type,
-                        Some(inner_text.replace("さんが強制退室になりました。", "")),
-                        None,
-                    ));
-                }
-
-                CommentType::Unknown => continue,
-            }
-        }
-
-        Ok(ret)
     }
 
     //retrieves the list of the names of current listeners
