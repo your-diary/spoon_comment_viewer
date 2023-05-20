@@ -45,7 +45,10 @@ impl APIRequest {
 fn player_thread(rx: Receiver<Audio>) {
     let mut player = Player::new();
     loop {
-        let audio: Audio = rx.recv().unwrap();
+        let audio: Audio = match rx.recv() {
+            Err(_) => return,
+            Ok(a) => a,
+        };
         player.play_sync(&audio);
     }
 }
@@ -68,7 +71,10 @@ fn api_thread(rx: Receiver<APIRequest>, config: Config) {
         .unwrap();
 
     loop {
-        let req: APIRequest = rx.recv().unwrap();
+        let req: APIRequest = match rx.recv() {
+            Err(_) => return,
+            Ok(r) => r,
+        };
 
         //for English
         if (req.effect.pitch_for_english) {

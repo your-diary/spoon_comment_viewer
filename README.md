@@ -152,7 +152,7 @@ $ cp ./config_template.json ./config.json
     },
     "chatgpt": {
         "enabled": false,
-        "excluded_user": "DJりな",
+        "excluded_user_id": 12345678,
         "api_key": "abcde",
         "discord_url": "https://discord.com/api/webhooks/abcde/xyz",
         "http": {

@@ -175,6 +175,7 @@ impl SpoonClient {
     fn process_message_comment(&mut self, o: LiveMessage) -> Result<(), Box<dyn Error>> {
         let text = &o.update_component.message.value;
         let user = &o.data.user.nickname;
+        let id = &o.data.user.id;
 
         self.logger.log(
             None,
@@ -187,7 +188,7 @@ impl SpoonClient {
             ),
         )?;
 
-        if (user == &self.config.chatgpt.excluded_user) {
+        if (*id as usize == self.config.chatgpt.excluded_user_id) {
             return Ok(());
         }
 
@@ -688,7 +689,9 @@ impl SpoonClient {
                             continue;
                         }
                     };
-                    assert_eq!("success", o.result.detail);
+                    if (o.result.detail != "success") {
+                        panic!("WebSocket connection failed. Note fan live is not supported as we connect WebSocket anonymously: {:?}", o);
+                    }
                     info!("WebSocket connection succeeded.");
                 }
                 "live_rank" => (),

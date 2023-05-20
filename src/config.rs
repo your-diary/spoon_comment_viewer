@@ -90,7 +90,7 @@ pub struct VoiceVox {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ChatGPT {
     pub enabled: bool,
-    pub excluded_user: String,
+    pub excluded_user_id: usize,
     pub api_key: String,
     pub discord_url: String,
     pub http: HTTP,

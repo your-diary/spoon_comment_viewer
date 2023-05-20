@@ -10,7 +10,10 @@ fn bgm_thread(rx: Receiver<Audio>, audio: Audio) {
     std::thread::sleep(std::time::Duration::from_millis(100)); //for unknown reason, without this, the following `play_async()` silently failed
     player.play_async(&audio);
     loop {
-        let audio: Audio = rx.recv().unwrap();
+        let audio: Audio = match rx.recv() {
+            Err(_) => return,
+            Ok(a) => a,
+        };
         player.pause();
         player.play_sync(&audio);
         player.unpause();

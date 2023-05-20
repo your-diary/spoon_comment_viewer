@@ -79,7 +79,10 @@ async fn chatgpt_thread(
     );
 
     loop {
-        let (index, script) = rx.recv().unwrap();
+        let (index, script) = match rx.recv() {
+            Err(_) => return,
+            Ok(r) => r,
+        };
         tokio::spawn(caller(
             index,
             script,

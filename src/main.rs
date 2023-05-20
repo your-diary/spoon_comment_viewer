@@ -71,8 +71,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         if (timer.elapsed() > Duration::from_millis(config.spoon.listener_check_interval_ms)) {
             timer = Instant::now();
 
-            println!("listener"); //TODO
-
             if let Err(e) = spoon.process_listeners(&config) {
                 error!("{}", e);
                 continue;
@@ -86,7 +84,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let ins = Instant::now();
         let s = spoon.process_comments();
-        println!("{:?}", ins.elapsed());
+        if (ins.elapsed() > Duration::from_millis(1)) {
+            println!("{:?}", ins.elapsed());
+        }
         if let Err(s) = s {
             error!("{}", s);
         }
