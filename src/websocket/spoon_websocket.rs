@@ -27,7 +27,7 @@ impl WebSocket {
                     "live_id":    "{}",
                     "appversion": "8.3.3",
                     "retry":      0,
-                    "reconnect":  false,
+                    "reconnect":  true,
                     "event":      "live_join",
                     "type":       "live_req",
                     "useragent":  "Web"
