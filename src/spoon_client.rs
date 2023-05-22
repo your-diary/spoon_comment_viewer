@@ -472,6 +472,8 @@ impl SpoonClient {
             "粗品"
         } else if (effect == "LIKE") {
             "バスター"
+        } else if (effect == "DICE_LIKE") {
+            "サイコロ"
         } else {
             "謎のアイテム"
         };
